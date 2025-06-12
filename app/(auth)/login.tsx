@@ -1,16 +1,29 @@
-import { useState } from 'react';
-import { View, Text, Image,TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { Mail, Lock, CircleAlert as AlertCircle, LogIn } from 'lucide-react-native';
+import { Mail, Lock, CircleAlert as AlertCircle, LogIn, Eye, EyeOff } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import { login } from '@/services/auth';
+import { authService } from '@/services/auth';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const { unsubscribe } = authService.onAuthStateChange((user) => {
+      if (user) {
+        router.replace('/(tabs)');
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [router]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -22,10 +35,31 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      await login(email, password);
+      await authService.signIn(email, password);
       router.replace('/(tabs)');
     } catch (err) {
       setError('Invalid email or password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const { url } = await authService.signInWithGoogle();
+      
+      // Handle OAuth popup closure
+      if (!url) {
+        setError('Google sign-in was cancelled. Please try again.');
+        return;
+      }
+
+      router.replace('/(tabs)');
+    } catch (err) {
+      console.error('Google sign in error:', err);
+      setError('Failed to sign in with Google. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -86,9 +120,19 @@ export default function LoginScreen() {
               placeholder="Password"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               placeholderTextColor={Colors.neutral.main}
             />
+            <TouchableOpacity 
+              style={styles.passwordToggle}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff size={20} color={Colors.neutral.main} />
+              ) : (
+                <Eye size={20} color={Colors.neutral.main} />
+              )}
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -114,9 +158,16 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* Google Sign In Button */}
-          <TouchableOpacity style={styles.googleButton}>
-            {/* Placeholder for Google logo */}
-            <View style={styles.googleLogo} />
+          <TouchableOpacity 
+            style={styles.googleButton}
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            <Image
+              source={require('@/assets/images/google-logo.png')}
+              style={styles.googleLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.googleButtonText}>Sign In with Google</Text>
           </TouchableOpacity>
 
@@ -254,23 +305,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.neutral.border,
+    borderColor: '#E0E0E0',
     height: 56,
     borderRadius: 8,
     marginBottom: 24,
     backgroundColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
   },
   googleLogo: {
     width: 24,
     height: 24,
-    borderRadius: 12,
-    backgroundColor: '#4285F4', // Placeholder color for Google logo
     marginRight: 12,
   },
   googleButtonText: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: 'Inter-Medium',
     fontSize: 16,
-    color: Colors.text.dark,
+    color: '#757575',
   },
   signupContainer: {
     flexDirection: 'row',
@@ -285,5 +339,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: Colors.primary.main,
+  },
+  passwordToggle: {
+    padding: 8,
   },
 });

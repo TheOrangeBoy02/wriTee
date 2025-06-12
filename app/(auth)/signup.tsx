@@ -1,20 +1,59 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, FlatList } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { User, Mail, Lock, CircleAlert as AlertCircle } from 'lucide-react-native';
+import { User, Mail, Lock, Phone, CircleAlert as AlertCircle, Eye, EyeOff, ChevronDown } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
-import { signup } from '@/services/auth';
+import { authService } from '@/services/auth';
+
+// Country codes data
+const countryCodes = [
+  { code: '+265', country: 'Malawi' },
+  { code: '+44', country: 'UK' },
+  { code: '+1', country: 'USA' },
+  { code: '+234', country: 'Nigeria' },
+  { code: '+233', country: 'Ghana' },
+  { code: '+91', country: 'India' },
+  { code: '+61', country: 'Australia' },
+  { code: '+81', country: 'Japan' },
+  { code: '+49', country: 'Germany' },
+  { code: '+33', country: 'France' },
+  { code: '+39', country: 'Italy' },
+  { code: '+34', country: 'Spain' },
+  { code: '+86', country: 'China' },
+  { code: '+55', country: 'Brazil' },
+  { code: '+7', country: 'Russia' },
+  { code: '+27', country: 'South Africa' },
+  // Add more country codes as needed
+];
 
 export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [countryCode, setCountryCode] = useState('+44');
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  const validatePhoneNumber = (phone: string) => {
+    // Remove spaces, dashes, and parentheses
+    const cleanedNumber = phone.replace(/[\s()-]/g, '');
+    
+    // Check if the number matches international format
+    // This regex allows for:
+    // - Optional + at the start
+    // - 1-3 digits for country code
+    // - 7-15 digits for the phone number
+    const phoneRegex = /^\+?[1-9]\d{7,15}$/;
+    
+    return phoneRegex.test(cleanedNumber);
+  };
+
   const handleSignup = async () => {
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !phoneNumber) {
       setError('Please fill in all fields');
       return;
     }
@@ -24,18 +63,76 @@ export default function SignupScreen() {
       return;
     }
 
+    // Combine country code and phone number
+    const fullPhoneNumber = countryCode + phoneNumber.replace(/[\s()-]/g, '');
+    
+    if (!validatePhoneNumber(fullPhoneNumber)) {
+      setError('Please enter a valid phone number');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      await signup(name, email, password);
+      await authService.signUp(email, password, name, fullPhoneNumber);
+      // Wait a moment for the profile to be fully created
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await authService.signIn(email, password);
       router.replace('/(tabs)');
     } catch (err) {
-      setError('Failed to create account. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create account. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const formatPhoneNumber = (text: string) => {
+    // Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, '');
+    // Format as XXX XXX XXXX
+    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
+    if (match) {
+      const parts = [match[1], match[2], match[3]].filter(Boolean);
+      return parts.join(' ');
+    }
+    return text;
+  };
+
+  const renderCountryPicker = () => (
+    <Modal
+      visible={showCountryPicker}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowCountryPicker(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1} 
+        onPress={() => setShowCountryPicker(false)}
+      >
+        <View style={styles.modalContent}>
+          <FlatList
+            data={countryCodes}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.countryItem}
+                onPress={() => {
+                  setCountryCode(item.code);
+                  setShowCountryPicker(false);
+                }}
+              >
+                <Text style={styles.countryCode}>{item.code}</Text>
+                <Text style={styles.countryName}>{item.country}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -65,7 +162,7 @@ export default function SignupScreen() {
             <User size={20} color={Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Full Name"
+              placeholder="Full Name *"
               value={name}
               onChangeText={setName}
               placeholderTextColor={Colors.neutral.main}
@@ -76,7 +173,7 @@ export default function SignupScreen() {
             <Mail size={20} color={Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder="Email *"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -85,16 +182,47 @@ export default function SignupScreen() {
             />
           </View>
 
+          <View style={styles.phoneContainer}>
+            <TouchableOpacity
+              style={styles.countryCodeButton}
+              onPress={() => setShowCountryPicker(true)}
+            >
+              <Text style={styles.countryCodeText}>{countryCode}</Text>
+              <ChevronDown size={16} color={Colors.neutral.main} />
+            </TouchableOpacity>
+
+            <View style={[styles.inputContainer, styles.phoneInputContainer]}>
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number *"
+                value={phoneNumber}
+                onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
+                keyboardType="phone-pad"
+                placeholderTextColor={Colors.neutral.main}
+              />
+            </View>
+          </View>
+
           <View style={styles.inputContainer}>
             <Lock size={20} color={Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder="Password *"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!showPassword}
               placeholderTextColor={Colors.neutral.main}
             />
+            <TouchableOpacity 
+              style={styles.passwordToggle}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff size={20} color={Colors.neutral.main} />
+              ) : (
+                <Eye size={20} color={Colors.neutral.main} />
+              )}
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -119,6 +247,7 @@ export default function SignupScreen() {
           </View>
         </View>
       </ScrollView>
+      {renderCountryPicker()}
     </KeyboardAvoidingView>
   );
 }
@@ -190,6 +319,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.text.dark,
   },
+  passwordToggle: {
+    padding: 8,
+  },
   signupButton: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -216,5 +348,59 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: Colors.primary.main,
+  },
+  phoneContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  countryCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.neutral.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    height: 56,
+    marginRight: 8,
+  },
+  countryCodeText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: Colors.text.dark,
+    marginRight: 4,
+  },
+  phoneInputContainer: {
+    flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.background.main,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '50%',
+  },
+  countryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.neutral.border,
+  },
+  countryCode: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: Colors.text.dark,
+    marginRight: 12,
+    width: 60,
+  },
+  countryName: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: Colors.text.medium,
   },
 });

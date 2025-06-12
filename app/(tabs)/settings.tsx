@@ -4,9 +4,10 @@ import { useRouter } from 'expo-router';
 import { LogOut, Bell, Moon, User, Clock, Trash2 } from 'lucide-react-native';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
-import { logout, deleteAccount } from '@/services/auth';
+import { authService } from '@/services/auth';
 import { getUserSettings, updateUserSettings } from '@/services/user';
 import { UserSettings } from '@/types';
+
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function SettingsScreen() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await authService.signOut();
       router.replace('/login');
     } catch (error) {
       console.error('Error logging out:', error);
@@ -65,7 +66,13 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteAccount();
+              const user = await authService.getCurrentUser();
+              if (user?.id) {
+                // Delete user data from profiles table
+                await supabase.from('profiles').delete().eq('id', user.id);
+                // Delete user authentication
+                await supabase.auth.admin.deleteUser(user.id);
+              }
               router.replace('/login');
             } catch (error) {
               console.error('Error deleting account:', error);

@@ -1,4 +1,5 @@
 import { UserSettings } from '@/types';
+import { supabase } from './supabase';
 
 // Simulated user data
 const mockUserSettings: UserSettings = {
@@ -15,20 +16,44 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  * Get the current user's name
  */
 export const getUsername = async (): Promise<string> => {
-  // Simulate API call
-  await delay(300);
-  
-  return 'Jane';
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .single();
+
+    if (error) throw error;
+    if (!data?.display_name) return 'Writer'; // Default name if none set
+
+    return data.display_name;
+  } catch (error) {
+    console.error('Error fetching username:', error);
+    return 'Writer'; // Fallback name
+  }
 };
 
-/**
- * Get the current user's streak
- */
+
 export const getUserStreak = async (): Promise<number> => {
-  // Simulate API call
-  await delay(500);
-  
-  return 7; // Mock streak count
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('writing_streak')
+      .eq('id', user.id)
+      .single();
+
+    if (error) throw error;
+    return data?.writing_streak ?? 0;
+  } catch (error) {
+    console.error('Error fetching user streak:', error);
+    return 0;
+  }
 };
 
 /**

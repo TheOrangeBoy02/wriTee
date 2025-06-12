@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as WebBrowser from 'expo-web-browser';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import {
@@ -17,6 +18,9 @@ import { SplashScreen } from 'expo-router';
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+// Initialize WebBrowser for OAuth
+WebBrowser.maybeCompleteAuthSession();
 
 export default function RootLayout() {
   useFrameworkReady();

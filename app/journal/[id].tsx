@@ -56,9 +56,9 @@ export default function JournalEntryScreen() {
     try {
       const updatedEntry = {
         id: id === 'new' ? undefined : id,
-        title,
-        content,
-        date: new Date().toISOString(),
+        title: title.trim(),
+        content: content.trim(),
+        entry_date: new Date().toISOString(),
       };
 
       await updateJournalEntry(updatedEntry);
@@ -143,7 +143,7 @@ export default function JournalEntryScreen() {
               disabled={isSaving}
             >
               {isSaving ? (
-                <ActivityIndicator size="small\" color={Colors.primary.main} />
+                <ActivityIndicator size="small" color={Colors.primary.main} />
               ) : (
                 <Save size={20} color={Colors.primary.main} />
               )}
@@ -195,7 +195,7 @@ export default function JournalEntryScreen() {
           <>
             <Text style={styles.titleText}>{title}</Text>
             <Text style={styles.dateText}>
-              {entry?.date ? new Date(entry.date).toLocaleDateString('en-US', {
+              {entry?.entry_date ? new Date(entry.entry_date).toLocaleDateString('en-US', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',

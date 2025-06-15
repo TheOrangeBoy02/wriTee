@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View,ScrollView, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BookOpen, RefreshCw, Pencil, Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
@@ -72,7 +72,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Header />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.content}>
         <View style={styles.greetingContainer}>
           <Text style={styles.greeting}>{greeting},</Text>
           <Text style={styles.username}>{username || 'Writer'}</Text>
@@ -133,10 +133,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.background.main,
   },
-  scrollView: {
-    flex: 1,
-  },
   content: {
+    flex: 1,
     padding: 24,
     paddingTop: 16,
   },

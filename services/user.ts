@@ -1,4 +1,4 @@
-import { UserSettings } from '@/types';
+import { UserSettings, Profile } from '@/types';
 import { supabase } from './supabase';
 
 /**
@@ -105,6 +105,98 @@ const createDefaultSettings = async (userId: string, settings: UserSettings) => 
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
+
+  if (error) throw error;
+};
+
+export const updateUserProfile = async (profile: Partial<Profile>): Promise<Profile> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      ...profile,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getUserProfile = async (): Promise<Profile | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const updateWritingStreak = async (streak: number): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      writing_streak: streak,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
+
+  if (error) throw error;
+};
+
+export const updateLastEntryDate = async (date: string): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      last_entry_date: date,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
+
+  if (error) throw error;
+};
+
+export const updateMonthlyGoal = async (goal: number): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      monthly_goal: goal,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
+
+  if (error) throw error;
+};
+
+export const updatePhoneNumber = async (phoneNumber: number): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      phone_number: phoneNumber,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
 
   if (error) throw error;
 };

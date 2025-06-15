@@ -8,7 +8,7 @@ type JournalEntryItemProps = {
 };
 
 export default function JournalEntryItem({ entry, onPress }: JournalEntryItemProps) {
-  const formattedDate = new Date(entry.date).toLocaleDateString('en-US', {
+  const formattedDate = new Date(entry.entry_date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

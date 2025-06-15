@@ -12,7 +12,7 @@ export const getJournalEntries = async (): Promise<JournalEntry[]> => {
     .from('journal_entries')
     .select('*')
     .eq('user_id', user.id)
-    .order('date', { ascending: false });
+    .order('entry_date', { ascending: false });
 
   if (error) throw error;
   return data || [];
@@ -45,6 +45,8 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
+  const now = new Date().toISOString();
+
   if (entry.id) {
     // Update existing entry
     const { data, error } = await supabase
@@ -52,7 +54,8 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
       .update({
         title: entry.title,
         content: entry.content,
-        date: entry.date || new Date().toISOString(),
+        entry_date: entry.entry_date || now,
+        updated_at: now
       })
       .eq('id', entry.id)
       .eq('user_id', user.id)
@@ -70,8 +73,10 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
       .insert({
         title: entry.title || 'Untitled',
         content: entry.content || '',
-        date: entry.date || new Date().toISOString(),
         user_id: user.id,
+        entry_date: entry.entry_date || now,
+        created_at: now,
+        updated_at: now
       })
       .select()
       .single();
@@ -108,9 +113,26 @@ export const getJournalEntryDates = async (): Promise<string[]> => {
 
   const { data, error } = await supabase
     .from('journal_entries')
-    .select('date')
-    .eq('user_id', user.id);
+    .select('entry_date')
+    .eq('user_id', user.id)
+    .order('entry_date', { ascending: false });
   
   if (error) throw error;
-  return (data || []).map(entry => entry.date.split('T')[0]);
+  return (data || []).map(entry => entry.entry_date.split('T')[0]);
+};
+
+/**
+ * Get the count of journal entries
+ */
+export const getJournalEntryCount = async (): Promise<number> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { count, error } = await supabase
+    .from('journal_entries')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+  return count || 0;
 };

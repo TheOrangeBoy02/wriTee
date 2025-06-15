@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { UserProfile } from '@/types';
+import { createUserProfile } from '@/utils/common';
 
 export const authService = {
   async signUp(email: string, password: string, displayName?: string, phoneNumber?: string) {
@@ -33,24 +34,13 @@ export const authService = {
         throw new Error('Failed to create user account');
       }
       
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email: data.user.email,
-          display_name: displayName || null,
-          phone_number: phoneNumber || null,
-          writing_streak: 0,
-          monthly_goal: 30,
-          created_at: new Date().toISOString(),
-          update_at: new Date().toISOString(),
-        });
-      
-      if (profileError) {
+      // Create profile using shared utility
+      try {
+        await createUserProfile(supabase, data.user.id, data.user.email!, displayName || null, phoneNumber || null);
+      } catch (profileError: any) {
         // If profile creation fails, delete the auth user
         await supabase.auth.admin.deleteUser(data.user.id);
-        throw new Error('Failed to create user profile: ' + profileError.message);
+        throw new Error('Failed to create user profile: ' + (profileError.message || 'Unknown error'));
       }
       
       return data;
@@ -75,7 +65,7 @@ export const authService = {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'myapp://',
+          redirectTo: 'writee://',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -85,9 +75,33 @@ export const authService = {
 
       if (error) throw error;
 
-      // Check if we have a valid OAuth response
       if (!data?.url) {
         throw new Error('No OAuth URL returned');
+      }
+
+      // After successful OAuth, check session
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (sessionData?.session?.user) {
+        const user = sessionData.session.user;
+        
+        // Check if profile exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .single();
+
+        if (!existingProfile) {
+          // Create new profile using shared utility
+          await createUserProfile(
+            supabase,
+            user.id,
+            user.email!,
+            user.user_metadata.full_name || user.email?.split('@')[0],
+            null
+          );
+        }
       }
 
       return data;

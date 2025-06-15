@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Mail, Lock, CircleAlert as AlertCircle, LogIn, Eye, EyeOff } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
 import Colors from '@/constants/Colors';
 import { authService } from '@/services/auth';
 
@@ -50,13 +51,11 @@ export default function LoginScreen() {
       setError(null);
       const { url } = await authService.signInWithGoogle();
       
-      // Handle OAuth popup closure
-      if (!url) {
-        setError('Google sign-in was cancelled. Please try again.');
-        return;
-      }
+      // Open URL in browser for OAuth flow
+      await WebBrowser.openAuthSessionAsync(url, 'writee://', {
+        showInRecents: true,
+      });
 
-      router.replace('/(tabs)');
     } catch (err) {
       console.error('Google sign in error:', err);
       setError('Failed to sign in with Google. Please try again.');
@@ -310,11 +309,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 24,
     backgroundColor: '#fff',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
   },
   googleLogo: {
     width: 24,

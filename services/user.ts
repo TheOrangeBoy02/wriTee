@@ -1,17 +1,6 @@
 import { UserSettings } from '@/types';
 import { supabase } from './supabase';
 
-// Simulated user data
-const mockUserSettings: UserSettings = {
-  notificationsEnabled: true,
-  darkModeEnabled: false,
-  preferredJournalTime: '21:00',
-  reminderEnabled: true,
-};
-
-// Simulated delay to mimic network request
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 /**
  * Get the current user's name
  */
@@ -36,7 +25,6 @@ export const getUsername = async (): Promise<string> => {
   }
 };
 
-
 export const getUserStreak = async (): Promise<number> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -60,21 +48,63 @@ export const getUserStreak = async (): Promise<number> => {
  * Get the user's app settings
  */
 export const getUserSettings = async (): Promise<UserSettings> => {
-  // Simulate API call
-  await delay(600);
-  
-  return mockUserSettings;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error) {
+    // If no settings exist yet, return defaults
+    const defaults: UserSettings = {
+      notificationsEnabled: true,
+      darkModeEnabled: false,
+      preferredJournalTime: '21:00',
+      reminderEnabled: true,
+    };
+
+    // Create default settings in database
+    await createDefaultSettings(user.id, defaults);
+    return defaults;
+  }
+
+  return data;
 };
 
 /**
  * Update the user's app settings
  */
 export const updateUserSettings = async (settings: UserSettings): Promise<UserSettings> => {
-  // Simulate API call
-  await delay(800);
-  
-  // In a real implementation, this would update settings in Firebase
-  Object.assign(mockUserSettings, settings);
-  
-  return mockUserSettings;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('user_settings')
+    .upsert({
+      user_id: user.id,
+      ...settings,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+// Helper function to create default settings
+const createDefaultSettings = async (userId: string, settings: UserSettings) => {
+  const { error } = await supabase
+    .from('user_settings')
+    .insert({
+      user_id: userId,
+      ...settings,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+  if (error) throw error;
 };

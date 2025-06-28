@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View,ScrollView, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BookOpen, RefreshCw, Pencil, Sparkles } from 'lucide-react-native';
@@ -17,11 +17,18 @@ export default function HomeScreen() {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  const getGreeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
   useEffect(() => {
     loadUserData();
-    setGreeting(getGreeting());
+    setGreeting(getGreeting);
     loadRandomPrompt();
-  }, []);
+  }, [getGreeting]);
 
   const loadUserData = async () => {
     try {
@@ -46,15 +53,9 @@ export default function HomeScreen() {
     }
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
 
   const handleNewEntry = () => {
-    router.push('/journal/new');
+    router.push('/journal/[id]?id=new');
   };
 
   const handleRefreshPrompt = () => {
@@ -86,7 +87,7 @@ export default function HomeScreen() {
           <View style={styles.promptHeader}>
             <View style={styles.promptTitleContainer}>
               <Sparkles size={20} color={Colors.accent.main} />
-              <Text style={styles.promptTitle}>Today's Prompt</Text>
+              <Text style={styles.promptTitle}>Today&apos;s Prompt</Text>
             </View>
             <TouchableOpacity 
               style={styles.refreshButton} 

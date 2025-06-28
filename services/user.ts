@@ -48,17 +48,11 @@ export const getUserStreak = async (): Promise<number> => {
  * Get the user's app settings
  */
 export const getUserSettings = async (): Promise<UserSettings> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .from('user_settings')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error) {
-    // If no settings exist yet, return defaults
+    // For now, use localStorage/AsyncStorage as fallback until user_settings table is created
     const defaults: UserSettings = {
       notificationsEnabled: true,
       darkModeEnabled: false,
@@ -66,47 +60,109 @@ export const getUserSettings = async (): Promise<UserSettings> => {
       reminderEnabled: true,
     };
 
-    // Create default settings in database
-    await createDefaultSettings(user.id, defaults);
-    return defaults;
-  }
+    // Try to get from database first
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
 
-  return data;
+    if (error) {
+      // If no settings exist for this user, return defaults
+      console.log('No settings found for user, using defaults:', error.message);
+      return defaults;
+    }
+
+    // Map database columns to interface
+    if (data) {
+      return {
+        notificationsEnabled: data.notifications_enabled ?? defaults.notificationsEnabled,
+        darkModeEnabled: data.dark_mode_enabled ?? defaults.darkModeEnabled,
+        preferredJournalTime: data.preferred_journal_time ?? defaults.preferredJournalTime,
+        reminderEnabled: data.reminder_enabled ?? defaults.reminderEnabled,
+      };
+    }
+
+    return defaults;
+  } catch (error) {
+    console.error('Unexpected error loading settings:', error);
+    // Return defaults if anything fails
+    return {
+      notificationsEnabled: true,
+      darkModeEnabled: false,
+      preferredJournalTime: '21:00',
+      reminderEnabled: true,
+    };
+  }
 };
 
 /**
  * Update the user's app settings
  */
 export const updateUserSettings = async (settings: UserSettings): Promise<UserSettings> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
-    .from('user_settings')
-    .upsert({
-      user_id: user.id,
-      ...settings,
-      updated_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
+    // Try to update in database
+    const { data, error } = await supabase
+      .from('user_settings')
+      .upsert({
+        user_id: user.id,
+        notifications_enabled: settings.notificationsEnabled,
+        dark_mode_enabled: settings.darkModeEnabled,
+        preferred_journal_time: settings.preferredJournalTime,
+        reminder_enabled: settings.reminderEnabled,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
 
-  if (error) throw error;
-  return data;
+    if (error) {
+      console.error('Failed to save settings to database:', error.message);
+      // Return the settings anyway so UI updates
+      return settings;
+    }
+
+    // Map the database response back to our interface
+    if (data) {
+      return {
+        notificationsEnabled: data.notifications_enabled,
+        darkModeEnabled: data.dark_mode_enabled,
+        preferredJournalTime: data.preferred_journal_time,
+        reminderEnabled: data.reminder_enabled,
+      };
+    }
+    
+    return settings;
+  } catch (error) {
+    console.error('Unexpected error updating settings:', error);
+    // Return the settings anyway so UI doesn't break
+    return settings;
+  }
 };
 
 // Helper function to create default settings
 const createDefaultSettings = async (userId: string, settings: UserSettings) => {
-  const { error } = await supabase
-    .from('user_settings')
-    .insert({
-      user_id: userId,
-      ...settings,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
+  try {
+    const { error } = await supabase
+      .from('user_settings')
+      .insert({
+        user_id: userId,
+        notifications_enabled: settings.notificationsEnabled,
+        dark_mode_enabled: settings.darkModeEnabled,
+        preferred_journal_time: settings.preferredJournalTime,
+        reminder_enabled: settings.reminderEnabled,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
-  if (error) throw error;
+    if (error) {
+      console.error('Could not create default settings:', error.message);
+    }
+  } catch (error) {
+    console.error('Error creating default settings:', error);
+  }
 };
 
 export const updateUserProfile = async (profile: Partial<Profile>): Promise<Profile> => {
@@ -186,7 +242,7 @@ export const updateMonthlyGoal = async (goal: number): Promise<void> => {
   if (error) throw error;
 };
 
-export const updatePhoneNumber = async (phoneNumber: number): Promise<void> => {
+export const updatePhoneNumber = async (phoneNumber: string): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 

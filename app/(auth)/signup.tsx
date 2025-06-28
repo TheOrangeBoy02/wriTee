@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, FlatList } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { User, Mail, Lock, Phone, CircleAlert as AlertCircle, Eye, EyeOff, ChevronDown } from 'lucide-react-native';
+import { User, Mail, Lock, CircleAlert as AlertCircle, Eye, EyeOff, ChevronDown } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { authService } from '@/services/auth';
+import { signUpSchema, validateField } from '@/utils/validation';
 
 // Country codes data
 const countryCodes = [
@@ -35,41 +36,35 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [, setNameError] = useState<string | null>(null);
+  const [, setEmailError] = useState<string | null>(null);
+  const [, setPasswordError] = useState<string | null>(null);
+  const [, setPhoneError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
-  const validatePhoneNumber = (phone: string) => {
-    // Remove spaces, dashes, and parentheses
-    const cleanedNumber = phone.replace(/[\s()-]/g, '');
+  const validateForm = (): boolean => {
+    const fullPhoneNumber = countryCode + phoneNumber.replace(/[\s()-]/g, '');
     
-    // Check if the number matches international format
-    // This regex allows for:
-    // - Optional + at the start
-    // - 1-3 digits for country code
-    // - 7-15 digits for the phone number
-    const phoneRegex = /^\+?[1-9]\d{7,15}$/;
-    
-    return phoneRegex.test(cleanedNumber);
+    const nameValidation = validateField(signUpSchema.shape.displayName, name || undefined);
+    const emailValidation = validateField(signUpSchema.shape.email, email);
+    const passwordValidation = validateField(signUpSchema.shape.password, password);
+    const phoneValidation = validateField(signUpSchema.shape.phoneNumber, fullPhoneNumber || undefined);
+
+    setNameError(nameValidation.error || null);
+    setEmailError(emailValidation.error || null);
+    setPasswordError(passwordValidation.error || null);
+    setPhoneError(phoneValidation.error || null);
+
+    return nameValidation.isValid && emailValidation.isValid && passwordValidation.isValid && phoneValidation.isValid;
   };
 
   const handleSignup = async () => {
-    if (!name || !email || !password || !phoneNumber) {
-      setError('Please fill in all fields');
+    if (!validateForm()) {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    // Combine country code and phone number
     const fullPhoneNumber = countryCode + phoneNumber.replace(/[\s()-]/g, '');
-    
-    if (!validatePhoneNumber(fullPhoneNumber)) {
-      setError('Please enter a valid phone number');
-      return;
-    }
 
     setIsLoading(true);
     setError(null);
@@ -80,9 +75,16 @@ export default function SignupScreen() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       await authService.signIn(email, password);
       router.replace('/(tabs)');
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create account. Please try again.';
-      setError(errorMessage);
+    } catch (err: any) {
+      if (err.message?.includes('already registered')) {
+        setError('An account with this email already exists. Please sign in instead.');
+      } else if (err.message?.includes('weak password')) {
+        setError('Password is too weak. Please choose a stronger password.');
+      } else if (err.message?.includes('invalid email')) {
+        setError('Please enter a valid email address.');
+      } else {
+        setError('Failed to create account. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }

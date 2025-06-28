@@ -15,7 +15,24 @@ export default function JournalEntryScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  // const contentRef = useRef<TextInput>(null); // TODO: Use for text selection
   const router = useRouter();
+
+  const loadEntry = async () => {
+    if (!id || id === 'new') return;
+    
+    try {
+      const entryData = await getJournalEntry(id);
+      setEntry(entryData);
+      setTitle(entryData.title);
+      setContent(entryData.content);
+    } catch (error) {
+      console.error('Error loading entry:', error);
+      Alert.alert('Error', 'Failed to load journal entry');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (id === 'new') {
@@ -28,23 +45,9 @@ export default function JournalEntryScreen() {
       // Existing entry
       loadEntry();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const loadEntry = async () => {
-    setIsLoading(true);
-    try {
-      if (id) {
-        const journalEntry = await getJournalEntry(id);
-        setEntry(journalEntry);
-        setTitle(journalEntry.title);
-        setContent(journalEntry.content);
-      }
-    } catch (error) {
-      console.error('Error loading entry:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -101,8 +104,28 @@ export default function JournalEntryScreen() {
   };
 
   const formatText = (formatType: string) => {
-    // Implement text formatting logic
-    console.log('Format:', formatType);
+    // For now, just append the formatting to the end of the content
+    // TODO: Implement proper text selection and formatting
+    let formattedText = '';
+    
+    switch (formatType) {
+      case 'bold':
+        formattedText = '**text**';
+        break;
+      case 'italic':
+        formattedText = '_text_';
+        break;
+      case 'heading':
+        formattedText = '# ';
+        break;
+      case 'bullet':
+        formattedText = '• ';
+        break;
+      default:
+        return;
+    }
+    
+    setContent(prev => prev + formattedText);
   };
 
   if (isLoading) {

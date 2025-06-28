@@ -20,7 +20,7 @@ export default function JournalScreen() {
   const loadEntries = async () => {
     setIsLoading(true);
     try {
-      const journalEntries = await getJournalEntries();
+      const { entries: journalEntries } = await getJournalEntries();
       setEntries(journalEntries);
     } catch (error) {
       console.error('Error loading journal entries:', error);
@@ -30,7 +30,7 @@ export default function JournalScreen() {
   };
 
   const handleNewEntry = () => {
-    router.push('/journal/new');
+    router.push('/journal/[id]?id=new');
   };
 
   const handleEntryPress = (id: string) => {

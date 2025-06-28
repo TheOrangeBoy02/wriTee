@@ -2,20 +2,31 @@ import { JournalEntry } from '@/types';
 import { supabase } from './supabase';
 
 /**
- * Get all journal entries
+ * Get all journal entries with pagination
  */
-export const getJournalEntries = async (): Promise<JournalEntry[]> => {
+export const getJournalEntries = async (page = 0, pageSize = 20): Promise<{ entries: JournalEntry[], hasMore: boolean }> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { data, error } = await supabase
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
     .from('journal_entries')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('user_id', user.id)
-    .order('entry_date', { ascending: false });
+    .order('entry_date', { ascending: false })
+    .range(from, to);
 
   if (error) throw error;
-  return data || [];
+  
+  const totalEntries = count || 0;
+  const hasMore = (page + 1) * pageSize < totalEntries;
+  
+  return {
+    entries: data || [],
+    hasMore
+  };
 };
 
 /**
@@ -105,11 +116,19 @@ export const deleteJournalEntry = async (id: string): Promise<void> => {
 };
 
 /**
- * Get dates that have journal entries
+ * Get dates that have journal entries (with caching)
  */
-export const getJournalEntryDates = async (): Promise<string[]> => {
+let datesCache: { data: string[], timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+export const getJournalEntryDates = async (forceRefresh = false): Promise<string[]> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
+
+  // Check cache
+  if (!forceRefresh && datesCache && Date.now() - datesCache.timestamp < CACHE_DURATION) {
+    return datesCache.data;
+  }
 
   const { data, error } = await supabase
     .from('journal_entries')
@@ -118,12 +137,39 @@ export const getJournalEntryDates = async (): Promise<string[]> => {
     .order('entry_date', { ascending: false });
   
   if (error) throw error;
-  return (data || []).map(entry => entry.entry_date.split('T')[0]);
+  
+  const dates = (data || []).map(entry => entry.entry_date.split('T')[0]);
+  
+  // Update cache
+  datesCache = {
+    data: dates,
+    timestamp: Date.now()
+  };
+  
+  return dates;
 };
 
 /**
  * Get the count of journal entries
  */
+/**
+ * Get recent journal entries (for dashboard)
+ */
+export const getRecentJournalEntries = async (limit = 5): Promise<JournalEntry[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('entry_date', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
+};
+
 export const getJournalEntryCount = async (): Promise<number> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -135,4 +181,33 @@ export const getJournalEntryCount = async (): Promise<number> => {
 
   if (error) throw error;
   return count || 0;
+};
+
+/**
+ * Search journal entries by title or content
+ */
+export const searchJournalEntries = async (query: string, page = 0, pageSize = 10): Promise<{ entries: JournalEntry[], hasMore: boolean }> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const from = page * pageSize;
+  const to = from + pageSize - 1;
+
+  const { data, error, count } = await supabase
+    .from('journal_entries')
+    .select('*', { count: 'exact' })
+    .eq('user_id', user.id)
+    .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+    .order('entry_date', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+  
+  const totalEntries = count || 0;
+  const hasMore = (page + 1) * pageSize < totalEntries;
+  
+  return {
+    entries: data || [],
+    hasMore
+  };
 };

@@ -21,7 +21,7 @@ export const createUserProfile = async (supabase: any, userId: string, email: st
       writing_streak: 0,
       monthly_goal: 30,
       created_at: new Date().toISOString(),
-      update_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
 
   if (error) throw error;

@@ -49,6 +49,13 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="profile-settings"
+        options={{
+          href: null, // Hide from tab bar
+          title: 'Profile Settings',
+        }}
+      />
     </Tabs>
   );
 }

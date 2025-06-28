@@ -14,7 +14,18 @@ export interface Profile {
   writing_streak: number;
   last_entry_date: string | null;
   monthly_goal: number;
-  phone_number: number | null;
+  phone_number: string | null;
+}
+export interface UserProfile {
+  id: string;
+  email: string;
+  display_name?: string | null;
+  phone_number?: string | null;
+  writing_streak?: number;
+  last_entry_date?: string;
+  monthly_goal?: number;
+  updated_at?: string;
+ 
 }
 
 // Journal entry type

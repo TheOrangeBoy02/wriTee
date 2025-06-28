@@ -144,7 +144,7 @@ export const authService = {
       .from('profiles')
       .update({
         ...updates,
-        update_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', user.id)
       .select()
@@ -163,7 +163,7 @@ export const authService = {
       .update({
         writing_streak: streak,
         last_entry_date: lastEntryDate,
-        update_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);
 
@@ -178,7 +178,7 @@ export const authService = {
       .from('profiles')
       .update({
         monthly_goal: goal,
-        update_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', user.id);
 
@@ -197,13 +197,15 @@ export const authService = {
 
     if (profileError) throw profileError;
 
-    // Then delete the auth user
-    const { error: authError } = await supabase.auth.admin.deleteUser(user.id);
-    if (authError) throw authError;
+    // Sign out the user (auth user deletion should be handled server-side)
+    await supabase.auth.signOut();
+    
+    // Note: Actual user deletion should be implemented via Edge Functions
+    // for security. This client-side implementation only removes profile data.
   },
 
   onAuthStateChange(callback: (user: any) => void) {
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       callback(session?.user ?? null);
     });
     return data.subscription;

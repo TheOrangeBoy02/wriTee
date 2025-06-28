@@ -5,12 +5,15 @@ import { Mail, Lock, CircleAlert as AlertCircle, LogIn, Eye, EyeOff } from 'luci
 import * as WebBrowser from 'expo-web-browser';
 import Colors from '@/constants/Colors';
 import { authService } from '@/services/auth';
+import { signInSchema, validateField } from '@/utils/validation';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
@@ -26,9 +29,18 @@ export default function LoginScreen() {
     };
   }, [router]);
 
+  const validateForm = (): boolean => {
+    const emailValidation = validateField(signInSchema.shape.email, email);
+    const passwordValidation = validateField(signInSchema.shape.password, password);
+
+    setEmailError(emailValidation.error || null);
+    setPasswordError(passwordValidation.error || null);
+
+    return emailValidation.isValid && passwordValidation.isValid;
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    if (!validateForm()) {
       return;
     }
 
@@ -38,8 +50,16 @@ export default function LoginScreen() {
     try {
       await authService.signIn(email, password);
       router.replace('/(tabs)');
-    } catch (err) {
-      setError('Invalid email or password. Please try again.');
+    } catch (err: any) {
+      if (err.message?.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please check your credentials.');
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError('Please check your email and confirm your account.');
+      } else if (err.message?.includes('Too many requests')) {
+        setError('Too many login attempts. Please try again later.');
+      } else {
+        setError('Unable to sign in. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -99,26 +119,33 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <View style={styles.inputContainer}>
-            <Mail size={20} color={Colors.neutral.main} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, emailError && styles.inputError]}>
+            <Mail size={20} color={emailError ? Colors.error.main : Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (emailError) setEmailError(null);
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               placeholderTextColor={Colors.neutral.main}
             />
           </View>
+          {emailError && <Text style={styles.fieldError}>{emailError}</Text>}
 
-          <View style={styles.inputContainer}>
-            <Lock size={20} color={Colors.neutral.main} style={styles.inputIcon} />
+          <View style={[styles.inputContainer, passwordError && styles.inputError]}>
+            <Lock size={20} color={passwordError ? Colors.error.main : Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (passwordError) setPasswordError(null);
+              }}
               secureTextEntry={!showPassword}
               placeholderTextColor={Colors.neutral.main}
             />
@@ -133,6 +160,7 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
           </View>
+          {passwordError && <Text style={styles.fieldError}>{passwordError}</Text>}
 
           <TouchableOpacity
             style={styles.forgotPassword}
@@ -171,7 +199,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account? </Text>
+            <Text style={styles.signupText}>Don&apos;t have an account? </Text>
             <Link href="/signup" asChild>
               <TouchableOpacity>
                 <Text style={styles.signupLink}>Sign up</Text>
@@ -336,5 +364,16 @@ const styles = StyleSheet.create({
   },
   passwordToggle: {
     padding: 8,
+  },
+  inputError: {
+    borderColor: Colors.error.main,
+  },
+  fieldError: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: Colors.error.main,
+    marginTop: -12,
+    marginBottom: 16,
+    marginLeft: 4,
   },
 });

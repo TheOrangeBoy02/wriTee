@@ -17,7 +17,7 @@ export default function SettingsScreen() {
     preferredJournalTime: '21:00',
     reminderEnabled: true,
   });
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadSettings();
@@ -29,6 +29,13 @@ export default function SettingsScreen() {
       setSettings(userSettings);
     } catch (error) {
       console.error('Error loading settings:', error);
+      // Use default settings if loading fails
+      setSettings({
+        notificationsEnabled: true,
+        darkModeEnabled: false,
+        preferredJournalTime: '21:00',
+        reminderEnabled: true,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +49,7 @@ export default function SettingsScreen() {
     } catch (error) {
       console.error('Error updating settings:', error);
       // Revert the setting if the update fails
-      setSettings(settings);
+      setSettings(prev => ({ ...prev, [setting]: !value }));
     }
   };
 
@@ -66,13 +73,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const user = await authService.getCurrentUser();
-              if (user?.id) {
-                // Delete user data from profiles table
-                await supabase.from('profiles').delete().eq('id', user.id);
-                // Delete user authentication
-                await supabase.auth.admin.deleteUser(user.id);
-              }
+              await authService.deleteAccount();
               router.replace('/login');
             } catch (error) {
               console.error('Error deleting account:', error);
@@ -84,11 +85,15 @@ export default function SettingsScreen() {
   };
 
   const handleTimeSettings = () => {
-    router.push('/time-settings');
+    Alert.alert(
+      'Time Settings',
+      'Time settings will be available in a future update.',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleProfileSettings = () => {
-    router.push('/profile-settings');
+    router.push('/(tabs)/profile-settings');
   };
 
   return (

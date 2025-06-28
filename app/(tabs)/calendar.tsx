@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { Calendar as RNCalendar, DateData } from 'react-native-calendars';
@@ -64,8 +64,8 @@ export default function CalendarScreen() {
     } else {
       // Create new entry for this date
       router.push({
-        pathname: '/journal/new',
-        params: { date: day.dateString }
+        pathname: '/journal/[id]',
+        params: { id: 'new', date: day.dateString }
       });
     }
   };

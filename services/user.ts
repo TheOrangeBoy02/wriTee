@@ -30,14 +30,24 @@ export const getUserStreak = async (): Promise<number> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    console.log('📊 getUserStreak: Fetching streak for user:', user.id);
+
     const { data, error } = await supabase
       .from('profiles')
       .select('writing_streak')
       .eq('id', user.id)
       .single();
 
-    if (error) throw error;
-    return data?.writing_streak ?? 0;
+    if (error) {
+      console.error('📊 getUserStreak: Database error:', error);
+      throw error;
+    }
+    
+    console.log('📊 getUserStreak: Raw database result:', data);
+    const streak = data?.writing_streak ?? 0;
+    console.log('📊 getUserStreak: Returning streak:', streak);
+    
+    return streak;
   } catch (error) {
     console.error('Error fetching user streak:', error);
     return 0;
@@ -201,15 +211,24 @@ export const updateWritingStreak = async (streak: number): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const { error } = await supabase
+  console.log('💾 updateWritingStreak: Updating streak for user:', user.id, 'to value:', streak);
+
+  const { data, error } = await supabase
     .from('profiles')
     .update({ 
       writing_streak: streak,
       updated_at: new Date().toISOString()
     })
-    .eq('id', user.id);
+    .eq('id', user.id)
+    .select('writing_streak'); // Add select to see what was updated
 
-  if (error) throw error;
+  if (error) {
+    console.error('💾 updateWritingStreak: Database error:', error);
+    throw error;
+  }
+
+  console.log('💾 updateWritingStreak: Database update result:', data);
+  console.log('💾 updateWritingStreak: Streak successfully updated to:', streak);
 };
 
 export const updateLastEntryDate = async (date: string): Promise<void> => {

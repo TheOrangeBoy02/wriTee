@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Search, Calendar, PenLine } from 'lucide-react-native';
+import { Plus, Search, Calendar, PenLine, RefreshCw } from 'lucide-react-native';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
@@ -11,6 +11,7 @@ import { JournalEntry } from '@/types';
 export default function JournalScreen() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -37,6 +38,18 @@ export default function JournalScreen() {
     router.push(`/journal/${id}`);
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const { entries: journalEntries } = await getJournalEntries();
+      setEntries(journalEntries);
+    } catch (error) {
+      console.error('Error refreshing journal entries:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <PenLine size={64} color={Colors.neutral.light} />
@@ -57,6 +70,17 @@ export default function JournalScreen() {
       <View style={styles.actionsContainer}>
         <TouchableOpacity style={styles.searchButton}>
           <Search size={20} color={Colors.text.medium} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.refreshButton}
+          onPress={handleRefresh}
+          disabled={isRefreshing}
+        >
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color={Colors.text.medium} />
+          ) : (
+            <RefreshCw size={20} color={Colors.text.medium} />
+          )}
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.calendarButton}
@@ -104,6 +128,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchButton: {
+    backgroundColor: Colors.background.light,
+    padding: 10,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  refreshButton: {
     backgroundColor: Colors.background.light,
     padding: 10,
     borderRadius: 8,

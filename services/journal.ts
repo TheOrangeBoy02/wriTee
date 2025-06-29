@@ -1,5 +1,6 @@
 import { JournalEntry } from '@/types';
 import { supabase } from './supabase';
+import { updateStreakAfterEntry } from '@/utils/streak';
 
 /**
  * Get all journal entries with pagination
@@ -60,6 +61,7 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
 
   if (entry.id) {
     // Update existing entry
+    console.log('📝 Updating existing journal entry:', entry.id);
     const { data, error } = await supabase
       .from('journal_entries')
       .update({
@@ -79,6 +81,7 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
     return data;
   } else {
     // Create new entry
+    console.log('📝 Creating new journal entry');
     const { data, error } = await supabase
       .from('journal_entries')
       .insert({
@@ -94,6 +97,15 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
 
     if (error) throw error;
     if (!data) throw new Error('Failed to create entry');
+    
+    console.log('📝 Journal entry created successfully:', data.id);
+    console.log('📝 About to update streak with entry date:', data.entry_date);
+    
+    // Update streak after creating new entry
+    await updateStreakAfterEntry(data.entry_date);
+    
+    // Invalidate dates cache so calendar updates
+    datesCache = null;
     
     return data;
   }
@@ -113,6 +125,12 @@ export const deleteJournalEntry = async (id: string): Promise<void> => {
     .eq('user_id', user.id);
 
   if (error) throw error;
+  
+  // Recalculate streak after deletion
+  await updateStreakAfterEntry();
+  
+  // Invalidate dates cache so calendar updates
+  datesCache = null;
 };
 
 /**

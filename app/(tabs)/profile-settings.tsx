@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
@@ -65,7 +64,14 @@ export default function ProfileSettingsScreen() {
     }
   };
 
-  if (loading) return <View style={styles.container}><Text>Loading...</Text></View>;
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}> 
+        <ActivityIndicator size="large" color={Colors.primary.main} />
+        <Text style={{ marginTop: 16, fontFamily: 'Inter-Medium', fontSize: 16, color: Colors.text.dark }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -119,7 +125,7 @@ const styles = StyleSheet.create({
     marginTop: 32,
     backgroundColor: Colors.primary.main,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 4 ,
     alignItems: 'center',
   },
   saveButtonText: {

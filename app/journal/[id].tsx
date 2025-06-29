@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Save, Trash2, CreditCard as Edit } from 'lucide-react-native';
+import { ArrowLeft, Save, Trash2, Bold, Italic, Underline, X } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
+import { getRandomPrompt } from '@/services/prompts';
 import { JournalEntry } from '@/types';
-import FormatToolbar from '@/components/FormatToolbar';
 
 export default function JournalEntryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -15,11 +15,22 @@ export default function JournalEntryScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  // const contentRef = useRef<TextInput>(null); // TODO: Use for text selection
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [currentPrompt, setCurrentPrompt] = useState('');
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [currentFormat, setCurrentFormat] = useState<{bold: boolean, italic: boolean, underline: boolean}>({
+    bold: false,
+    italic: false,
+    underline: false
+  });
+  const contentInputRef = useRef<TextInput>(null);
   const router = useRouter();
 
+  // Calculate word count
+  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
+
   const loadEntry = async () => {
-    if (!id || id === 'new') return;
+    if (!id || id === 'new' || id === '[id]') return;
     
     try {
       const entryData = await getJournalEntry(id);
@@ -35,18 +46,29 @@ export default function JournalEntryScreen() {
   };
 
   useEffect(() => {
-    if (id === 'new') {
+    if (id === 'ne' || id === '[id]') {
       // New entry
       setIsLoading(false);
       setIsEditing(true);
       setTitle('');
       setContent('');
+      loadPrompt();
     } else {
       // Existing entry
       loadEntry();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const loadPrompt = async () => {
+    try {
+      const prompt = await getRandomPrompt();
+      setCurrentPrompt(prompt);
+      setShowPrompt(true);
+    } catch (error) {
+      console.error('Error loading prompt:', error);
+    }
+  };
 
 
   const handleSave = async () => {
@@ -55,20 +77,28 @@ export default function JournalEntryScreen() {
       return;
     }
 
+    if (!content.trim()) {
+      Alert.alert('Empty Content', 'Please write some content for your journal entry.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const updatedEntry = {
-        id: id === 'new' ? undefined : id,
+        id: (id === 'new' || id === '[id]') ? undefined : id,
         title: title.trim(),
         content: content.trim(),
-        entry_date: new Date().toISOString(),
+        entry_date: (id === 'new' || id === '[id]') ? new Date().toISOString() : entry?.entry_date || new Date().toISOString(),
       };
 
-      await updateJournalEntry(updatedEntry);
+      const savedEntry = await updateJournalEntry(updatedEntry);
       setIsEditing(false);
       
-      if (id === 'new') {
+      if (id === 'new' || id === '[id]') {
         router.back();
+      } else {
+        // Refresh the entry data after edit
+        setEntry(savedEntry);
       }
     } catch (error) {
       console.error('Error saving entry:', error);
@@ -89,7 +119,7 @@ export default function JournalEntryScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              if (id && id !== 'new') {
+              if (id && id !== 'new' && id !== '[id]') {
                 await deleteJournalEntry(id);
                 router.back();
               }
@@ -104,28 +134,54 @@ export default function JournalEntryScreen() {
   };
 
   const formatText = (formatType: string) => {
-    // For now, just append the formatting to the end of the content
-    // TODO: Implement proper text selection and formatting
-    let formattedText = '';
+    // Toggle the format state
+    setCurrentFormat(prev => ({
+      ...prev,
+      [formatType]: !prev[formatType as keyof typeof prev]
+    }));
+
+    // For now, we'll just add markdown-like indicators that the user can see
+    // In a future update, this could be enhanced with a proper rich text solution
+    const { start, end } = selection;
+    const selectedText = content.substring(start, end);
+    const hasSelection = start !== end;
+    
+    let before = '';
+    let after = '';
+    let newText = '';
     
     switch (formatType) {
       case 'bold':
-        formattedText = '**text**';
+        before = '**';
+        after = '**';
+        newText = hasSelection ? selectedText : 'bold text';
         break;
       case 'italic':
-        formattedText = '_text_';
+        before = '*';
+        after = '*';
+        newText = hasSelection ? selectedText : 'italic text';
         break;
-      case 'heading':
-        formattedText = '# ';
-        break;
-      case 'bullet':
-        formattedText = '• ';
+      case 'underline':
+        before = '_';
+        after = '_';
+        newText = hasSelection ? selectedText : 'underlined text';
         break;
       default:
         return;
     }
     
-    setContent(prev => prev + formattedText);
+    const formattedText = before + newText + after;
+    const newContent = content.substring(0, start) + formattedText + content.substring(end);
+    
+    setContent(newContent);
+    
+    // Set cursor position after formatting
+    setTimeout(() => {
+      const newCursorPos = hasSelection ? start + formattedText.length : start + before.length + newText.length + after.length;
+      contentInputRef.current?.setNativeProps({
+        selection: { start: newCursorPos, end: newCursorPos }
+      });
+    }, 10);
   };
 
   if (isLoading) {
@@ -141,6 +197,7 @@ export default function JournalEntryScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
@@ -149,33 +206,21 @@ export default function JournalEntryScreen() {
           <ArrowLeft size={24} color={Colors.text.dark} />
         </TouchableOpacity>
         
+        <View style={styles.headerCenter}>
+          <View style={styles.logoContainer}>
+                <Image
+                               source={require('@/assets/images/writee-logo.png')}
+                              style={{ width: 40, height: 40 }}
+                               resizeMode="contain"
+                             />
+          </View>
+          <Text style={styles.wordCount}>{wordCount} Words</Text>
+        </View>
+        
         <View style={styles.headerRight}>
-          {id !== 'new' && !isEditing && (
+          {id !== 'new' && id !== '[id]' && (
             <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => setIsEditing(true)}
-            >
-              <Edit size={20} color={Colors.primary.main} />
-            </TouchableOpacity>
-          )}
-          
-          {(isEditing || id === 'new') && (
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color={Colors.primary.main} />
-              ) : (
-                <Save size={20} color={Colors.primary.main} />
-              )}
-            </TouchableOpacity>
-          )}
-          
-          {id !== 'new' && (
-            <TouchableOpacity 
-              style={styles.actionButton}
+              style={styles.deleteButton}
               onPress={handleDelete}
             >
               <Trash2 size={20} color={Colors.error.main} />
@@ -189,46 +234,81 @@ export default function JournalEntryScreen() {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
-        {isEditing || id === 'new' ? (
-          <>
-            <TextInput
-              style={styles.titleInput}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Entry Title"
-              placeholderTextColor={Colors.neutral.main}
-              maxLength={100}
-            />
-            
-            {(isEditing || id === 'new') && (
-              <FormatToolbar onFormat={formatText} />
-            )}
-            
-            <TextInput
-              style={styles.contentInput}
-              value={content}
-              onChangeText={setContent}
-              placeholder="Write your thoughts here..."
-              placeholderTextColor={Colors.neutral.main}
-              multiline
-              textAlignVertical="top"
-            />
-          </>
-        ) : (
-          <>
-            <Text style={styles.titleText}>{title}</Text>
-            <Text style={styles.dateText}>
-              {entry?.entry_date ? new Date(entry.entry_date).toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              }) : ''}
-            </Text>
-            <Text style={styles.contentText}>{content}</Text>
-          </>
-        )}
+        <TextInput
+          style={styles.titleInput}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Journal Title"
+          placeholderTextColor={Colors.text.medium}
+          maxLength={100}
+        />
+        
+        <TextInput
+          ref={contentInputRef}
+          style={styles.contentInput}
+          value={content}
+          onChangeText={setContent}
+          onSelectionChange={(event) => setSelection(event.nativeEvent.selection)}
+          placeholder="Start writing your thoughts here..."
+          placeholderTextColor={Colors.text.medium}
+          multiline
+          textAlignVertical="top"
+        />
       </ScrollView>
+
+      {/* Prompt Section */}
+      {showPrompt && currentPrompt && (
+        <View style={styles.promptContainer}>
+          <View style={styles.promptHeader}>
+            <View style={styles.promptLabel}>
+              <Text style={styles.promptText}>Prompt</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.closePromptButton}
+              onPress={() => setShowPrompt(false)}
+            >
+              <X size={16} color={Colors.text.medium} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.promptContent}>{currentPrompt}</Text>
+        </View>
+      )}
+
+      {/* Bottom Toolbar */}
+      <View style={styles.bottomToolbar}>
+        <View style={styles.formatButtons}>
+          <TouchableOpacity 
+            style={[styles.formatButton, currentFormat.bold && styles.formatButtonActive]} 
+            onPress={() => formatText('bold')}
+          >
+            <Bold size={20} color={currentFormat.bold ? Colors.primary.main : Colors.text.dark} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.formatButton, currentFormat.italic && styles.formatButtonActive]} 
+            onPress={() => formatText('italic')}
+          >
+            <Italic size={20} color={currentFormat.italic ? Colors.primary.main : Colors.text.dark} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.formatButton, currentFormat.underline && styles.formatButtonActive]} 
+            onPress={() => formatText('underline')}
+          >
+            <Underline size={20} color={currentFormat.underline ? Colors.primary.main : Colors.text.dark} />
+          </TouchableOpacity>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.saveButton}
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -236,14 +316,16 @@ export default function JournalEntryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.main,
+    backgroundColor: Colors.background.light,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.background.main,
+    backgroundColor: Colors.background.light,
   },
+  
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -251,29 +333,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 16,
-    backgroundColor: Colors.background.main,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.neutral.border,
+    backgroundColor: Colors.background.light,
   },
   backButton: {
     padding: 8,
+    width: 40,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  logoContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  logoText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 20,
+    color: 'white',
+  },
+  wordCount: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    color: Colors.text.medium,
   },
   headerRight: {
-    flexDirection: 'row',
+    width: 40,
+    alignItems: 'flex-end',
   },
-  actionButton: {
+  deleteButton: {
     padding: 8,
-    marginLeft: 16,
   },
+  
+  // Content
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: 24,
+    paddingBottom: 120, // Space for bottom toolbar
   },
   titleInput: {
-    fontFamily: 'Playfair-Bold',
-    fontSize: 24,
+    fontFamily: 'Inter-Bold',
+    fontSize: 20,
     color: Colors.text.dark,
     marginBottom: 8,
     padding: 0,
@@ -284,24 +389,84 @@ const styles = StyleSheet.create({
     color: Colors.text.dark,
     lineHeight: 24,
     padding: 0,
-    minHeight: 300,
+    minHeight: 400,
   },
-  titleText: {
-    fontFamily: 'Playfair-Bold',
-    fontSize: 24,
-    color: Colors.text.dark,
+  
+  // Prompt Section
+  promptContainer: {
+    position: 'absolute',
+    bottom: 80,
+    left: 20,
+    right: 20,
+    backgroundColor: Colors.background.main,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  promptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 8,
   },
-  dateText: {
+  promptLabel: {
+    backgroundColor: Colors.primary.main,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  promptText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 12,
+    color: 'white',
+  },
+  closePromptButton: {
+    padding: 4,
+  },
+  promptContent: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: Colors.text.medium,
-    marginBottom: 24,
-  },
-  contentText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
     color: Colors.text.dark,
-    lineHeight: 24,
+    lineHeight: 20,
+  },
+  
+  // Bottom Toolbar
+  bottomToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: Colors.background.main,
+    borderTopWidth: 1,
+    borderTopColor: Colors.neutral.border,
+  },
+  formatButtons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  formatButton: {
+    padding: 8,
+    borderRadius: 6,
+  },
+  formatButtonActive: {
+    backgroundColor: Colors.primary.light,
+  },
+  saveButton: {
+    backgroundColor: Colors.primary.main,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 20,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 16,
+    color: 'white',
   },
 });

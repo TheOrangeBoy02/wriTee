@@ -31,7 +31,7 @@ export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+44');
+  const [countryCode, setCountryCode] = useState('+265');
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -44,12 +44,31 @@ export default function SignupScreen() {
   const router = useRouter();
 
   const validateForm = (): boolean => {
-    const fullPhoneNumber = countryCode + phoneNumber.replace(/[\s()-]/g, '');
-    
+    const fullPhoneNumber = countryCode + phoneNumber.replace(/\s|\(|\)|-/g, '');
+
     const nameValidation = validateField(signUpSchema.shape.displayName, name || undefined);
     const emailValidation = validateField(signUpSchema.shape.email, email);
     const passwordValidation = validateField(signUpSchema.shape.password, password);
     const phoneValidation = validateField(signUpSchema.shape.phoneNumber, fullPhoneNumber || undefined);
+
+    // Show alert for each field error (for debugging)
+    if (!nameValidation.isValid) {
+      alert('Name error: ' + nameValidation.error);
+    } else if (!emailValidation.isValid) {
+      alert('Email error: ' + emailValidation.error);
+    } else if (!passwordValidation.isValid) {
+      alert('Password error: ' + passwordValidation.error);
+    } else if (!phoneValidation.isValid) {
+      alert('Phone error: ' + phoneValidation.error + '\nValue: ' + fullPhoneNumber);
+    }
+
+    console.log('Validation:', {
+      name: nameValidation,
+      email: emailValidation,
+      password: passwordValidation,
+      phone: phoneValidation,
+      fullPhoneNumber,
+    });
 
     setNameError(nameValidation.error || null);
     setEmailError(emailValidation.error || null);
@@ -60,7 +79,9 @@ export default function SignupScreen() {
   };
 
   const handleSignup = async () => {
-    if (!validateForm()) {
+    const isValid = validateForm();
+    console.log('Form valid?', isValid, { name, email, phoneNumber, password, countryCode });
+    if (!isValid) {
       return;
     }
 
@@ -193,9 +214,9 @@ export default function SignupScreen() {
               <ChevronDown size={16} color={Colors.neutral.main} />
             </TouchableOpacity>
 
-            <View style={[styles.inputContainer, styles.phoneInputContainer]}>
+            <View style={styles.phoneInputContainer}>
               <TextInput
-                style={styles.input}
+                style={styles.phoneInput}
                 placeholder="Phone Number *"
                 value={phoneNumber}
                 onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
@@ -261,40 +282,54 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingTop: 60,
+    paddingTop: 80,
     paddingBottom: 40,
+    paddingHorizontal: 24,
   },
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 48,
   },
   title: {
     fontFamily: 'Playfair-Bold',
-    fontSize: 40,
+    fontSize: 42,
     color: Colors.primary.main,
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
     fontSize: 16,
     color: Colors.neutral.dark,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   formContainer: {
-    paddingHorizontal: 24,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 8,
   },
   formTitle: {
     fontFamily: 'Inter-Bold',
-    fontSize: 24,
+    fontSize: 26,
     color: Colors.text.dark,
-    marginBottom: 24,
+    marginBottom: 28,
+    textAlign: 'center',
   },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.error.light,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.error.main,
   },
   errorText: {
     fontFamily: 'Inter-Regular',
@@ -305,21 +340,23 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: Colors.neutral.border,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    height: 56,
-    marginBottom: 16,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    height: 60,
+    marginBottom: 20,
+    backgroundColor: '#fff',
   },
   inputIcon: {
     marginRight: 12,
   },
   input: {
     flex: 1,
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Medium',
     fontSize: 16,
     color: Colors.text.dark,
+    paddingVertical: 2,
   },
   passwordToggle: {
     padding: 8,
@@ -328,43 +365,53 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.primary.main,
-    height: 56,
-    borderRadius: 8,
-    marginBottom: 24,
+    height: 60,
+    borderRadius: 16,
+    marginTop: 8,
+    marginBottom: 28,
+    shadowColor: Colors.primary.main,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   signupButtonText: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontFamily: 'Inter-Bold',
+    fontSize: 17,
     color: '#fff',
+    letterSpacing: 0.5,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   loginText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    fontSize: 15,
     color: Colors.text.medium,
   },
   loginLink: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontFamily: 'Inter-Bold',
+    fontSize: 15,
     color: Colors.primary.main,
+    textDecorationLine: 'underline',
   },
   phoneContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   countryCodeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: Colors.neutral.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 56,
-    marginRight: 8,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    height: 60,
+    marginRight: 12,
+    backgroundColor: '#fff',
   },
   countryCodeText: {
     fontFamily: 'Inter-Regular',
@@ -374,6 +421,21 @@ const styles = StyleSheet.create({
   },
   phoneInputContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.neutral.border,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    height: 60,
+    backgroundColor: '#fff',
+  },
+  phoneInput: {
+    flex: 1,
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: Colors.text.dark,
+    paddingVertical: 2,
   },
   modalOverlay: {
     flex: 1,

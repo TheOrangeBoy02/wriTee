@@ -8,11 +8,30 @@ type JournalEntryItemProps = {
 };
 
 export default function JournalEntryItem({ entry, onPress }: JournalEntryItemProps) {
-  const formattedDate = new Date(entry.entry_date).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const getFormattedDate = () => {
+    const entryDate = new Date(entry.entry_date);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    entryDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    yesterday.setHours(0, 0, 0, 0);
+
+    if (entryDate.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (entryDate.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    } else {
+      return entryDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+  };
+
+  const formattedDate = getFormattedDate();
 
   const excerpt = entry.content.length > 120 
     ? `${entry.content.substring(0, 120)}...` 
@@ -44,7 +63,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   date: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
     color: Colors.text.medium,
   },

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Flame } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Flame } from 'lucide-react-native';
 import { Calendar as RNCalendar, DateData } from 'react-native-calendars';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
@@ -19,7 +19,6 @@ export default function CalendarScreen() {
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState<string>('');
   const [currentStreak, setCurrentStreak] = useState(0);
   const [streakDates, setStreakDates] = useState<string[]>([]);
   const router = useRouter();
@@ -75,11 +74,7 @@ export default function CalendarScreen() {
   };
 
   const updateMonthTitle = (date: string) => {
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
-    
-    const d = new Date(date);
-    setCurrentMonth(`${monthNames[d.getMonth()]} ${d.getFullYear()}`);
+    // Month title logic if needed in the future
   };
 
   const handleDayPress = (day: DateData) => {

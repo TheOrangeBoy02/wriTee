@@ -1,22 +1,29 @@
 import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Search, Calendar, PenLine, RefreshCw } from 'lucide-react-native';
+import { Plus, Search, Calendar, PenLine, RefreshCw, X } from 'lucide-react-native';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
-import { getJournalEntries } from '@/services/journal';
+import { getJournalEntries, getAllTags, getJournalEntriesByTags } from '@/services/journal';
 import { JournalEntry } from '@/types';
 
 export default function JournalScreen() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
     loadEntries();
+    loadTags();
   }, []);
+
+  useEffect(() => {
+    loadFilteredEntries();
+  }, [selectedTags]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadEntries = async () => {
     setIsLoading(true);
@@ -25,6 +32,32 @@ export default function JournalScreen() {
       setEntries(journalEntries);
     } catch (error) {
       console.error('Error loading journal entries:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadTags = async () => {
+    try {
+      const tags = await getAllTags();
+      setAvailableTags(tags);
+    } catch (error) {
+      console.error('Error loading tags:', error);
+    }
+  };
+
+  const loadFilteredEntries = async () => {
+    if (selectedTags.length === 0) {
+      loadEntries();
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { entries: filteredEntries } = await getJournalEntriesByTags(selectedTags);
+      setEntries(filteredEntries);
+    } catch (error) {
+      console.error('Error loading filtered entries:', error);
     } finally {
       setIsLoading(false);
     }
@@ -41,13 +74,25 @@ export default function JournalScreen() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const { entries: journalEntries } = await getJournalEntries();
-      setEntries(journalEntries);
+      await loadTags();
+      await loadFilteredEntries();
     } catch (error) {
       console.error('Error refreshing journal entries:', error);
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const clearAllFilters = () => {
+    setSelectedTags([]);
   };
 
   const renderEmptyState = () => (
@@ -65,30 +110,68 @@ export default function JournalScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Journal" />
-      
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.searchButton}>
-          <Search size={20} color={Colors.text.medium} />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.refreshButton}
-          onPress={handleRefresh}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color={Colors.text.medium} />
-          ) : (
-            <RefreshCw size={20} color={Colors.text.medium} />
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.calendarButton}
-          onPress={() => router.push('/calendar')}
-        >
-          <Calendar size={20} color={Colors.text.medium} />
-        </TouchableOpacity>
+      {/* Custom Header Row */}
+      <View style={styles.headerRow}>
+        <Text style={styles.headerTitle}>Journal</Text>
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity style={styles.searchButton}>
+            <Search size={20} color={Colors.text.medium} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.refreshButton}
+            onPress={handleRefresh}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <ActivityIndicator size="small" color={Colors.text.medium} />
+            ) : (
+              <RefreshCw size={20} color={Colors.text.medium} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.calendarButton}
+            onPress={() => router.push('/calendar')}
+          >
+            <Calendar size={20} color={Colors.text.medium} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Tag Filter Section */}
+      {availableTags.length > 0 && (
+        <View style={styles.tagFilterContainer}>
+          <View style={styles.tagFilterHeader}>
+            <Text style={styles.tagFilterTitle}>Filter by tags:</Text>
+            {selectedTags.length > 0 && (
+              <TouchableOpacity onPress={clearAllFilters} style={styles.clearButton}>
+                <X size={16} color={Colors.text.medium} />
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagFilterScroll}>
+            <View style={styles.tagFilterRow}>
+              {availableTags.map((tag) => (
+                <TouchableOpacity
+                  key={tag}
+                  style={[
+                    styles.tagFilterButton,
+                    selectedTags.includes(tag) && styles.tagFilterButtonActive
+                  ]}
+                  onPress={() => toggleTag(tag)}
+                >
+                  <Text style={[
+                    styles.tagFilterButtonText,
+                    selectedTags.includes(tag) && styles.tagFilterButtonTextActive
+                  ]}>
+                    {tag}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      )}
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -122,10 +205,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background.main,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 16,
+    backgroundColor: Colors.background.main,
+  },
+  headerTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 28,
+    color: Colors.text.dark,
+  },
   actionsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 24,
-    marginBottom: 16,
   },
   searchButton: {
     backgroundColor: Colors.background.light,
@@ -200,6 +295,61 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
+    color: '#fff',
+  },
+  
+  // Tag Filter Styles
+  tagFilterContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+  },
+  tagFilterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tagFilterTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: Colors.text.dark,
+  },
+  clearButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  clearButtonText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: Colors.text.medium,
+  },
+  tagFilterScroll: {
+    flexGrow: 0,
+  },
+  tagFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  tagFilterButton: {
+    backgroundColor: Colors.background.light,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.neutral.border,
+  },
+  tagFilterButtonActive: {
+    backgroundColor: Colors.primary.main,
+    borderColor: Colors.primary.main,
+  },
+  tagFilterButtonText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: Colors.text.dark,
+  },
+  tagFilterButtonTextActive: {
     color: '#fff',
   },
 });

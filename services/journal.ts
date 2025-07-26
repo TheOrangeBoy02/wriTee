@@ -62,40 +62,102 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
   if (entry.id) {
     // Update existing entry
     console.log('📝 Updating existing journal entry:', entry.id);
+    
+    // Build update object conditionally
+    const updateData: any = {
+      title: entry.title,
+      content: entry.content,
+      entry_date: entry.entry_date || now,
+      updated_at: now
+    };
+
+    // Only add tags if they exist (for backward compatibility)
+    if (entry.tags !== undefined) {
+      updateData.tags = entry.tags || [];
+    }
+
     const { data, error } = await supabase
       .from('journal_entries')
-      .update({
-        title: entry.title,
-        content: entry.content,
-        entry_date: entry.entry_date || now,
-        updated_at: now
-      })
+      .update(updateData)
       .eq('id', entry.id)
       .eq('user_id', user.id)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // If tags column doesn't exist, try without tags
+      if (error.code === '42703' && updateData.tags !== undefined) {
+        console.warn('Tags column does not exist, updating without tags');
+        delete updateData.tags;
+        const { data: retryData, error: retryError } = await supabase
+          .from('journal_entries')
+          .update(updateData)
+          .eq('id', entry.id)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        
+        if (retryError) throw retryError;
+        if (!retryData) throw new Error('Entry not found');
+        return retryData;
+      }
+      throw error;
+    }
     if (!data) throw new Error('Entry not found');
     
     return data;
   } else {
     // Create new entry
     console.log('📝 Creating new journal entry');
+    
+    // Build insert object conditionally
+    const insertData: any = {
+      title: entry.title || 'Untitled',
+      content: entry.content || '',
+      user_id: user.id,
+      entry_date: entry.entry_date || now,
+      created_at: now,
+      updated_at: now
+    };
+
+    // Only add tags if they exist (for backward compatibility)
+    if (entry.tags !== undefined) {
+      insertData.tags = entry.tags || [];
+    }
+
     const { data, error } = await supabase
       .from('journal_entries')
-      .insert({
-        title: entry.title || 'Untitled',
-        content: entry.content || '',
-        user_id: user.id,
-        entry_date: entry.entry_date || now,
-        created_at: now,
-        updated_at: now
-      })
+      .insert(insertData)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // If tags column doesn't exist, try without tags
+      if (error.code === '42703' && insertData.tags !== undefined) {
+        console.warn('Tags column does not exist, creating without tags');
+        delete insertData.tags;
+        const { data: retryData, error: retryError } = await supabase
+          .from('journal_entries')
+          .insert(insertData)
+          .select()
+          .single();
+        
+        if (retryError) throw retryError;
+        if (!retryData) throw new Error('Failed to create entry');
+        
+        console.log('📝 Journal entry created successfully:', retryData.id);
+        console.log('📝 About to update streak with entry date:', retryData.entry_date);
+        
+        // Update streak after creating new entry
+        await updateStreakAfterEntry(retryData.entry_date);
+        
+        // Invalidate dates cache so calendar updates
+        datesCache = null;
+        
+        return retryData;
+      }
+      throw error;
+    }
     if (!data) throw new Error('Failed to create entry');
     
     console.log('📝 Journal entry created successfully:', data.id);
@@ -228,4 +290,95 @@ export const searchJournalEntries = async (query: string, page = 0, pageSize = 1
     entries: data || [],
     hasMore
   };
+};
+
+/**
+ * Get all unique tags from journal entries
+ */
+export const getAllTags = async (): Promise<string[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  try {
+    const { data, error } = await supabase
+      .from('journal_entries')
+      .select('tags')
+      .eq('user_id', user.id)
+      .not('tags', 'is', null);
+
+    if (error) {
+      // If the tags column doesn't exist yet, return empty array
+      if (error.code === '42703') {
+        console.warn('Tags column does not exist yet. Please run the database migration.');
+        return [];
+      }
+      throw error;
+    }
+    
+    // Extract all unique tags
+    const allTags = new Set<string>();
+    (data || []).forEach(entry => {
+      if (entry.tags && Array.isArray(entry.tags)) {
+        entry.tags.forEach(tag => allTags.add(tag));
+      }
+    });
+    
+    return Array.from(allTags).sort();
+  } catch (error) {
+    console.error('Error loading tags:', error);
+    return [];
+  }
+};
+
+/**
+ * Get journal entries filtered by tags (AND logic)
+ */
+export const getJournalEntriesByTags = async (tags: string[], page = 0, pageSize = 20): Promise<{ entries: JournalEntry[], hasMore: boolean }> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  if (tags.length === 0) {
+    // If no tags selected, return all entries
+    return getJournalEntries(page, pageSize);
+  }
+
+  try {
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+
+    // Build the query to find entries that contain ALL selected tags
+    let query = supabase
+      .from('journal_entries')
+      .select('*', { count: 'exact' })
+      .eq('user_id', user.id);
+
+    // For each tag, add a condition that the tags array contains it
+    tags.forEach(tag => {
+      query = query.contains('tags', [tag]);
+    });
+
+    const { data, error, count } = await query
+      .order('entry_date', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      // If the tags column doesn't exist yet, return all entries
+      if (error.code === '42703') {
+        console.warn('Tags column does not exist yet. Falling back to all entries.');
+        return getJournalEntries(page, pageSize);
+      }
+      throw error;
+    }
+    
+    const totalEntries = count || 0;
+    const hasMore = (page + 1) * pageSize < totalEntries;
+    
+    return {
+      entries: data || [],
+      hasMore
+    };
+  } catch (error) {
+    console.error('Error loading filtered entries:', error);
+    return getJournalEntries(page, pageSize);
+  }
 };

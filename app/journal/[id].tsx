@@ -305,7 +305,7 @@ export default function JournalEntryScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.saveButtonText}>Save <Save style={styles.saveButton} /></Text>
+            <Text style={styles.saveButtonText}>Save</Text>
           )}
         </TouchableOpacity>
       </View>

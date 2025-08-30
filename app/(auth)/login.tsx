@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Mail, Lock, CircleAlert as AlertCircle, LogIn, Eye, EyeOff } from 'lucide-react-native';
@@ -38,6 +39,12 @@ export default function LoginScreen() {
 
     return emailValidation.isValid && passwordValidation.isValid;
   };
+
+  // Add this to your login.tsx imports
+
+
+// Add this button temporarily in your JSX (after your Google sign-in button)
+
 
   const handleLogin = async () => {
     if (!validateForm()) {
@@ -197,6 +204,17 @@ export default function LoginScreen() {
             />
             <Text style={styles.googleButtonText}>Sign In with Google</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+  style={{...styles.googleButton, backgroundColor: '#ff4444'}}
+  onPress={async () => {
+    await AsyncStorage.removeItem('hasLaunchedBefore');
+    alert('Onboarding reset! Close and restart the app.');
+  }}
+>
+  
+  <Text style={{color: 'white'}}>🔄 Reset Onboarding (DEV)</Text>
+</TouchableOpacity>
 
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don&apos;t have an account? </Text>

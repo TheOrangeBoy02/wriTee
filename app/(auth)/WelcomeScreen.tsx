@@ -1,40 +1,223 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  Image, 
+  StyleSheet, 
+  TouchableOpacity, 
+  FlatList, 
+  Dimensions,
+  ListRenderItem,
+  Animated 
+} from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Colors from '@/constants/Colors';
+import { ChevronRight } from 'lucide-react-native';
+
+// Get device width for slides
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Define the structure of each slide
+interface OnboardingSlide {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: any; // You'll replace with your actual images
+}
+
+// STEP 1: Define your slide data
+const ONBOARDING_DATA: OnboardingSlide[] = [
+  {
+    id: '1',
+    title: 'Welcome to Writee!',
+    subtitle: 'Your personal space to capture thoughts, reflect, and grow every day.',
+    image: require('@/assets/images/writee-logo.png'), // Replace with your onboarding images
+  },
+  {
+    id: '2', 
+    title: 'Make It a Habit',
+    subtitle: 'Stay motivated with streaks and reminders that make journaling effortless',
+    image: require('@/assets/images/writee-logo.png'), // Replace with your onboarding images
+  },
+  {
+    id: '3',
+    title: 'Find Your Spark',
+    subtitle: 'Explore prompts that open doors to new thoughts and deeper reflections.',
+    image: require('@/assets/images/writee-logo.png'), // Replace with your onboarding images
+  }
+];
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  
+  // STEP 2: State management for slides
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+  
+  // STEP 2.1: Animation values for button transition
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  const buttonOpacity = useRef(new Animated.Value(1)).current;
 
-  const handleGetStarted = () => {
-    router.push('/signup');
+  // STEP 3: Handle slide completion and navigation
+  const handleGetStarted = async () => {
+    try {
+      await AsyncStorage.setItem('hasLaunchedBefore', 'true');
+      router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('Error marking app as launched:', error);
+      router.replace('/(auth)/login');
+    }
   };
 
-  return (
-    <View style={styles.container}>
+
+
+  // STEP 5: Handle next slide navigation
+  const handleNext = () => {
+    if (currentIndex < ONBOARDING_DATA.length - 1) {
+      const nextIndex = currentIndex + 1;
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setCurrentIndex(nextIndex);
+      
+      // Trigger animation when reaching last slide via button
+      if (nextIndex === ONBOARDING_DATA.length - 1) {
+        setTimeout(() => animateToGetStarted(), 300); // Delay for slide transition
+      }
+    } else {
+      handleGetStarted();
+    }
+  };
+
+  // STEP 6: Handle automatic slide detection when user swipes
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      const newIndex = viewableItems[0].index || 0;
+      setCurrentIndex(newIndex);
+      
+      // Trigger animation when reaching last slide
+      if (newIndex === ONBOARDING_DATA.length - 1) {
+        animateToGetStarted();
+      }
+    }
+  });
+
+  // STEP 6.1: Animation for button transition to "Get Started"
+  const animateToGetStarted = () => {
+    // Create a sequence: scale down -> scale up with style change
+    Animated.sequence([
+      // First: scale down and fade slightly
+      Animated.parallel([
+        Animated.timing(buttonScale, {
+          toValue: 0.95,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonOpacity, {
+          toValue: 0.8,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Then: scale back up and restore opacity
+      Animated.parallel([
+        Animated.timing(buttonScale, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(buttonOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  };
+
+  // STEP 7: Create individual slide component
+  const renderSlide: ListRenderItem<OnboardingSlide> = ({ item }) => (
+    <View style={styles.slide}>
       <View style={styles.imageContainer}>
         <Image
-          source={require('@/assets/images/writee-logo.png')}
-          style={styles.image}
+          source={item.image}
+          style={styles.slideImage}
           resizeMode="contain"
         />
       </View>
+      
+      <View style={styles.textContainer}>
+        <Text style={styles.slideTitle}>{item.title}</Text>
+        <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
+      </View>
+    </View>
+  );
 
-      <View style={styles.contentContainer}>
-        <Text style={styles.titleContainer}>
-          <Text style={styles.title}>Welcome to WriTee</Text>
-          <Text style={styles.exclamation}>!</Text>
-        </Text>
+  // STEP 8: Create pagination dots
+  const renderPagination = () => (
+    <View style={styles.paginationContainer}>
+      {ONBOARDING_DATA.map((_, index) => (
+        <View
+          key={index}
+          style={[
+            styles.paginationDot,
+            index === currentIndex ? styles.paginationDotActive : styles.paginationDotInactive
+          ]}
+        />
+      ))}
+    </View>
+  );
 
-        <Text style={styles.subtitle}>
-          Your daily space for reflection, ideas, and growth
-        </Text>
+  // STEP 9: Determine button text and style based on current slide
+  const getButtonText = () => {
+    return currentIndex === ONBOARDING_DATA.length - 1 ? "Let's Get Started ->" : 'Continue ->';
+  };
 
-        <TouchableOpacity 
-          style={styles.button}
-          onPress={handleGetStarted}
+  const isLastSlide = currentIndex === ONBOARDING_DATA.length - 1;
+
+  return (
+    <View style={styles.container}>
+
+      {/* STEP 11: Slides carousel */}
+      <FlatList
+        ref={flatListRef}
+        data={ONBOARDING_DATA}
+        renderItem={renderSlide}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged.current}
+        viewabilityConfig={{
+          itemVisiblePercentThreshold: 50,
+        }}
+      />
+
+      {/* STEP 12: Bottom section with pagination and buttons */}
+      <View style={styles.bottomSection}>
+        {renderPagination()}
+        
+        <Animated.View
+          style={[
+            { transform: [{ scale: buttonScale }], opacity: buttonOpacity }
+          ]}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
-        </TouchableOpacity>
+          <TouchableOpacity 
+            style={[
+              styles.continueButton, 
+              isLastSlide ? styles.continueButtonSolid : styles.continueButtonOutline
+            ]} 
+            onPress={handleNext}
+          >
+            <Text 
+              style={[
+                styles.continueButtonText,
+                isLastSlide ? styles.continueButtonTextSolid : styles.continueButtonTextOutline
+              ]}
+            >
+              {getButtonText()}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </View>
   );
@@ -44,55 +227,95 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background.main,
+  },
+
+  slide: {
+    width: SCREEN_WIDTH,
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
   },
   imageContainer: {
-    width: '100%',
-    aspectRatio: 1,
-    marginBottom: 32,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  contentContainer: {
-    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 100,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
+  slideImage: {
+    width: SCREEN_WIDTH * 0.7,
+    height: SCREEN_WIDTH * 0.7,
   },
-  title: {
+  textContainer: {
+    flex: 0.8,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 40,
+  },
+  slideTitle: {
     fontSize: 32,
     fontFamily: 'Playfair-Bold',
     color: Colors.text.dark,
+    textAlign: 'center',
+    marginBottom: 16,
   },
-  exclamation: {
-    fontSize: 32,
-    fontFamily: 'Playfair-Bold',
-    color: Colors.primary.main,
-  },
-  subtitle: {
-    fontSize: 18,
+  slideSubtitle: {
+    fontSize: 17,
     fontFamily: 'Inter-Regular',
     color: Colors.text.medium,
     textAlign: 'center',
-    marginBottom: 48,
+    lineHeight: 24,
+    paddingHorizontal: 20,
   },
-  button: {
+  bottomSection: {
+    paddingBottom: 50,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    marginBottom: 40,
+  },
+  paginationDot: {
+    width: 23,
+    height: 4,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
     backgroundColor: Colors.primary.main,
-    paddingHorizontal: 32,
+  },
+  paginationDotInactive: {
+    backgroundColor: Colors.neutral.light,
+  },
+  continueButton: {
+    paddingHorizontal: 90,
     paddingVertical: 16,
     borderRadius: 30,
     width: '100%',
     alignItems: 'center',
+    borderWidth: 2,
   },
-  buttonText: {
-    color: '#fff',
+  // Solid button style (for "Let's Get Started")
+  continueButtonSolid: {
+    backgroundColor: Colors.primary.main,
+    borderColor: Colors.primary.main,
+  },
+  // Outline button style (for "Continue")
+  continueButtonOutline: {
+    backgroundColor: 'transparent',
+    borderColor: Colors.primary.main,
+  },
+  continueButtonText: {
     fontSize: 18,
     fontFamily: 'Inter-SemiBold',
+  },
+  // Solid button text (white text)
+  continueButtonTextSolid: {
+    color: '#fff',
+  },
+  // Outline button text (primary color text)
+  continueButtonTextOutline: {
+    color: Colors.primary.main,
   },
 });

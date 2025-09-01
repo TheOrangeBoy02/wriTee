@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
   Text, 
-  Image, 
   StyleSheet, 
   TouchableOpacity, 
   FlatList, 
@@ -12,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Rive from 'rive-react-native';
 import Colors from '@/constants/Colors';
 import { ChevronRight } from 'lucide-react-native';
 
@@ -23,29 +23,31 @@ interface OnboardingSlide {
   id: string;
   title: string;
   subtitle: string;
-  image: any; // You'll replace with your actual images
+  riveResource: string; // Rive resource name
+  stateMachineName?: string; // Optional: for Rive state machines
+  artboardName?: string; // Optional: for specific Rive artboards
 }
 
-// STEP 1: Define your slide data
+// STEP 1: Define your slide data with Rive animations
 const ONBOARDING_DATA: OnboardingSlide[] = [
-  {
-    id: '1',
-    title: 'Welcome to Writee!',
-    subtitle: 'Your personal space to capture thoughts, reflect, and grow every day.',
-    image: require('@/assets/images/writee-logo.png'), // Replace with your onboarding images
-  },
-  {
-    id: '2', 
-    title: 'Make It a Habit',
-    subtitle: 'Stay motivated with streaks and reminders that make journaling effortless',
-    image: require('@/assets/images/writee-logo.png'), // Replace with your onboarding images
-  },
-  {
-    id: '3',
-    title: 'Find Your Spark',
-    subtitle: 'Explore prompts that open doors to new thoughts and deeper reflections.',
-    image: require('@/assets/images/writee-logo.png'), // Replace with your onboarding images
-  }
+{
+  id: '1',
+  title: 'Welcome to WriTee!',
+  subtitle: 'Your personal space to capture thoughts, reflect, and grow every day.',
+  riveResource: 'handwrite', // This matches handwrite.riv
+},
+{
+  id: '2', 
+  title: 'Make It a Habit',
+  subtitle: 'Stay motivated with streaks and reminders that keep journaling simple.',
+  riveResource: 'handwrite', // Using same animation, you can change this
+},
+{
+  id: '3',
+  title: 'Find Your Spark',
+  subtitle: 'Explore prompts that open doors to new thoughts and deeper reflections.',
+  riveResource: 'handwrite', // Using same animation, you can change this
+}
 ];
 
 export default function WelcomeScreen() {
@@ -54,6 +56,7 @@ export default function WelcomeScreen() {
   // STEP 2: State management for slides
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
+  const riveRefs = useRef<{ [key: string]: any }>({});
   
   // STEP 2.1: Animation values for button transition
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -70,7 +73,15 @@ export default function WelcomeScreen() {
     }
   };
 
-
+  // STEP 4: Handle animation when slide becomes active (Rive handles autoplay)
+  useEffect(() => {
+    const currentSlide = ONBOARDING_DATA[currentIndex];
+    if (currentSlide.riveResource && riveRefs.current[currentSlide.id]) {
+      // Rive animations typically handle their own playback
+      // You can trigger specific states here if needed
+      console.log(`Switched to slide with Rive resource: ${currentSlide.riveResource}`);
+    }
+  }, [currentIndex]);
 
   // STEP 5: Handle next slide navigation
   const handleNext = () => {
@@ -138,10 +149,15 @@ export default function WelcomeScreen() {
   const renderSlide: ListRenderItem<OnboardingSlide> = ({ item }) => (
     <View style={styles.slide}>
       <View style={styles.imageContainer}>
-        <Image
-          source={item.image}
-          style={styles.slideImage}
-          resizeMode="contain"
+        <Rive
+          ref={(ref) => {
+            riveRefs.current[item.id] = ref;
+          }}
+          resourceName={item.riveResource}
+          style={styles.riveAnimation}
+          autoplay={true}
+          stateMachineName={item.stateMachineName}
+          artboardName={item.artboardName}
         />
       </View>
       
@@ -242,9 +258,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 100,
   },
-  slideImage: {
-    width: SCREEN_WIDTH * 0.7,
-    height: SCREEN_WIDTH * 0.7,
+  riveAnimation: {
+    width: SCREEN_WIDTH * 0.8,
+    height: SCREEN_WIDTH * 0.8,
   },
   textContainer: {
     flex: 0.8,

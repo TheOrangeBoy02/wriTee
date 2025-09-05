@@ -1,3 +1,5 @@
+// RootLayout.tsx - Complete Fixed Version
+
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -76,28 +78,42 @@ export default function RootLayout() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
+    const isOnWelcomeScreen = segments[1] === 'WelcomeScreen';
+    const isOnLoginScreen = segments[1] === 'login';
+    const isOnSignupScreen = segments[1] === 'signup';
 
-    if (isFirstTime) {
-      // First time: Welcome -> Login -> Home
-      if (!inAuthGroup || segments[1] === 'login') {
-        // If not in auth group, or specifically on login, go to welcome
-        if (segments[1] !== 'WelcomeScreen') {
+    console.log('Navigation check:', { 
+      segments, 
+      isFirstTime, 
+      isAuthenticated, 
+      inAuthGroup,
+      currentScreen: segments[1]
+    });
+
+    // If user is authenticated, go to tabs
+    if (isAuthenticated) {
+      if (!inTabsGroup) {
+        router.replace('/(tabs)');
+      }
+      return;
+    }
+
+    // If user is not authenticated
+    if (!isAuthenticated) {
+      if (isFirstTime) {
+        // First time users should see welcome screen first
+        if (!isOnWelcomeScreen && !isOnLoginScreen && !isOnSignupScreen) {
           router.replace('/(auth)/WelcomeScreen');
         }
-      }
-    } else {
-      // Subsequent launches: Login -> Home (skip welcome)
-      if (isAuthenticated) {
-        if (!inTabsGroup) {
-          router.replace('/(tabs)');
-        }
+        // Let welcome screen handle navigation to login when "Get Started" is pressed
       } else {
-        if (!inAuthGroup || segments[1] !== 'login') {
+        // Returning users go directly to login, BUT allow signup screen
+        if (!isOnLoginScreen && !isOnSignupScreen) {
           router.replace('/(auth)/login');
         }
       }
     }
-  }, [isFirstTime, isAuthenticated, isInitializing, segments]);
+  }, [isFirstTime, isAuthenticated, isInitializing, segments, router]);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

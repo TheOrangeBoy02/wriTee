@@ -1,3 +1,5 @@
+// login.tsx
+
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
@@ -214,11 +216,11 @@ export default function LoginScreen() {
 >
   
   <Text style={{color: 'white'}}>🔄 Reset Onboarding (DEV)</Text>
-</TouchableOpacity>
+</TouchableOpacity >
 
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don&apos;t have an account? </Text>
-            <Link href="/signup" asChild>
+           <Link href="/(auth)/signup" asChild>
               <TouchableOpacity>
                 <Text style={styles.signupLink}>Sign up</Text>
               </TouchableOpacity>

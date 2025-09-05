@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.55.0",
+    "@expo-google-fonts/caveat": "^0.4.1",
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo-google-fonts/playfair-display": "^0.2.3",
     "@expo/vector-icons": "^14.1.0",
@@ -39,6 +40,7 @@
     "expo-web-browser": "~14.2.0",
     "font-awesome-icons": "^1.6.0",
     "jest-expo": "~53.0.10",
+    "lottie-react-native": "^7.2.2",
     "lucide-react-native": "^0.475.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",

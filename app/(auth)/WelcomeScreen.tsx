@@ -1,3 +1,5 @@
+// WelcomeScreen.tsx
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   View, 
@@ -15,7 +17,6 @@ import LottieView from 'lottie-react-native';
 // For Expo, you might need to use:
 // import { Lottie } from 'expo-av';
 import Colors from '@/constants/Colors';
-import { ChevronRight } from 'lucide-react-native';
 
 // Get device width for slides
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -66,14 +67,20 @@ export default function WelcomeScreen() {
 
   // STEP 3: Handle slide completion and navigation
   const handleGetStarted = async () => {
-    try {
-      await AsyncStorage.setItem('hasLaunchedBefore', 'true');
+  try {
+    // Set the flag first
+    await AsyncStorage.setItem('hasLaunchedBefore', 'true');
+    
+    // Use a small delay to ensure AsyncStorage is updated
+    setTimeout(() => {
       router.replace('/(auth)/login');
-    } catch (error) {
-      console.error('Error marking app as launched:', error);
-      router.replace('/(auth)/login');
-    }
-  };
+    }, 100);
+  } catch (error) {
+    console.error('Error marking app as launched:', error);
+    // Even if AsyncStorage fails, still navigate to login
+    router.replace('/(auth)/login');
+  }
+};
 
   // STEP 4: Play animation when slide becomes active
   useEffect(() => {

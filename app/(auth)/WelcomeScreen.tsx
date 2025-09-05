@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Rive from 'rive-react-native';
+import LottieView from 'lottie-react-native';
+// For Expo, you might need to use:
+// import { Lottie } from 'expo-av';
 import Colors from '@/constants/Colors';
 import { ChevronRight } from 'lucide-react-native';
 
@@ -23,30 +25,30 @@ interface OnboardingSlide {
   id: string;
   title: string;
   subtitle: string;
-  riveResource: string; // Rive resource name
-  stateMachineName?: string; // Optional: for Rive state machines
-  artboardName?: string; // Optional: for specific Rive artboards
+  animation?: any; // For animations
+  animationType?: 'rive' | 'lottie'; // Specify animation type
+  image?: any; // For static images (if you want to mix both)
 }
 
-// STEP 1: Define your slide data with Rive animations
+// STEP 1: Define your slide data with Lottie animation
 const ONBOARDING_DATA: OnboardingSlide[] = [
 {
   id: '1',
   title: 'Welcome to WriTee!',
   subtitle: 'Your personal space to capture thoughts, reflect, and grow every day.',
-  riveResource: 'handwrite', // This matches handwrite.riv
+  animation: require('@/assets/animations/writee.json'),
 },
 {
   id: '2', 
   title: 'Make It a Habit',
   subtitle: 'Stay motivated with streaks and reminders that keep journaling simple.',
-  riveResource: 'handwrite', // Using same animation, you can change this
+  animation: require('@/assets/animations/habit.json'),
 },
 {
   id: '3',
   title: 'Find Your Spark',
   subtitle: 'Explore prompts that open doors to new thoughts and deeper reflections.',
-  riveResource: 'handwrite', // Using same animation, you can change this
+  animation: require('@/assets/animations/handwrite.json'),
 }
 ];
 
@@ -56,7 +58,7 @@ export default function WelcomeScreen() {
   // STEP 2: State management for slides
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const riveRefs = useRef<{ [key: string]: any }>({});
+  const lottieRefs = useRef<{ [key: string]: LottieView | null }>({});
   
   // STEP 2.1: Animation values for button transition
   const buttonScale = useRef(new Animated.Value(1)).current;
@@ -73,13 +75,15 @@ export default function WelcomeScreen() {
     }
   };
 
-  // STEP 4: Handle animation when slide becomes active (Rive handles autoplay)
+  // STEP 4: Play animation when slide becomes active
   useEffect(() => {
     const currentSlide = ONBOARDING_DATA[currentIndex];
-    if (currentSlide.riveResource && riveRefs.current[currentSlide.id]) {
-      // Rive animations typically handle their own playback
-      // You can trigger specific states here if needed
-      console.log(`Switched to slide with Rive resource: ${currentSlide.riveResource}`);
+    if (currentSlide.animation && lottieRefs.current[currentSlide.id]) {
+      // Add a small delay to ensure the ref is properly set
+      setTimeout(() => {
+        lottieRefs.current[currentSlide.id]?.reset();
+        lottieRefs.current[currentSlide.id]?.play();
+      }, 100);
     }
   }, [currentIndex]);
 
@@ -149,16 +153,18 @@ export default function WelcomeScreen() {
   const renderSlide: ListRenderItem<OnboardingSlide> = ({ item }) => (
     <View style={styles.slide}>
       <View style={styles.imageContainer}>
-        <Rive
-          ref={(ref) => {
-            riveRefs.current[item.id] = ref;
-          }}
-          resourceName={item.riveResource}
-          style={styles.riveAnimation}
-          autoplay={true}
-          stateMachineName={item.stateMachineName}
-          artboardName={item.artboardName}
-        />
+        {item.animation ? (
+          <LottieView
+            ref={(ref) => {
+              lottieRefs.current[item.id] = ref;
+            }}
+            source={item.animation}
+            style={styles.lottieAnimation}
+            autoPlay={false} // We'll control playback manually
+            loop={true}
+            speed={0.8} // Adjust speed if needed
+          />
+        ) : null}
       </View>
       
       <View style={styles.textContainer}>
@@ -257,6 +263,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 100,
+  },
+  slideImage: {
+    width: SCREEN_WIDTH * 0.7,
+    height: SCREEN_WIDTH * 0.7,
+  },
+  lottieAnimation: {
+    width: SCREEN_WIDTH * 0.8,
+    height: SCREEN_WIDTH * 0.8,
   },
   riveAnimation: {
     width: SCREEN_WIDTH * 0.8,

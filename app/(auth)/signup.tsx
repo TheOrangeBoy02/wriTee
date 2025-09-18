@@ -1,55 +1,27 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, FlatList } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { User, Mail, Lock, CircleAlert as AlertCircle, Eye, EyeOff, ChevronDown } from 'lucide-react-native';
+import { User, Mail, Lock, CircleAlert as AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { authService } from '@/services/auth';
 import { signUpSchema, validateField } from '@/utils/validation';
 
-// Country codes data
-const countryCodes = [
-  { code: '+265', country: 'Malawi' },
-  { code: '+44', country: 'UK' },
-  { code: '+1', country: 'USA' },
-  { code: '+234', country: 'Nigeria' },
-  { code: '+233', country: 'Ghana' },
-  { code: '+91', country: 'India' },
-  { code: '+61', country: 'Australia' },
-  { code: '+81', country: 'Japan' },
-  { code: '+49', country: 'Germany' },
-  { code: '+33', country: 'France' },
-  { code: '+39', country: 'Italy' },
-  { code: '+34', country: 'Spain' },
-  { code: '+86', country: 'China' },
-  { code: '+55', country: 'Brazil' },
-  { code: '+7', country: 'Russia' },
-  { code: '+27', country: 'South Africa' },
-  // Add more country codes as needed
-];
-
 export default function SignupScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [countryCode, setCountryCode] = useState('+265');
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setNameError] = useState<string | null>(null);
   const [, setEmailError] = useState<string | null>(null);
   const [, setPasswordError] = useState<string | null>(null);
-  const [, setPhoneError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const validateForm = (): boolean => {
-    const fullPhoneNumber = countryCode + phoneNumber.replace(/\s|\(|\)|-/g, '');
-
     const nameValidation = validateField(signUpSchema.shape.displayName, name || undefined);
     const emailValidation = validateField(signUpSchema.shape.email, email);
     const passwordValidation = validateField(signUpSchema.shape.password, password);
-    const phoneValidation = validateField(signUpSchema.shape.phoneNumber, fullPhoneNumber || undefined);
 
     // Show alert for each field error (for debugging)
     if (!nameValidation.isValid) {
@@ -58,40 +30,33 @@ export default function SignupScreen() {
       alert('Email error: ' + emailValidation.error);
     } else if (!passwordValidation.isValid) {
       alert('Password error: ' + passwordValidation.error);
-    } else if (!phoneValidation.isValid) {
-      alert('Phone error: ' + phoneValidation.error + '\nValue: ' + fullPhoneNumber);
     }
 
     console.log('Validation:', {
       name: nameValidation,
       email: emailValidation,
       password: passwordValidation,
-      phone: phoneValidation,
-      fullPhoneNumber,
     });
 
     setNameError(nameValidation.error || null);
     setEmailError(emailValidation.error || null);
     setPasswordError(passwordValidation.error || null);
-    setPhoneError(phoneValidation.error || null);
 
-    return nameValidation.isValid && emailValidation.isValid && passwordValidation.isValid && phoneValidation.isValid;
+    return nameValidation.isValid && emailValidation.isValid && passwordValidation.isValid;
   };
 
   const handleSignup = async () => {
     const isValid = validateForm();
-    console.log('Form valid?', isValid, { name, email, phoneNumber, password, countryCode });
+    console.log('Form valid?', isValid, { name, email, password });
     if (!isValid) {
       return;
     }
-
-    const fullPhoneNumber = countryCode + phoneNumber.replace(/[\s()-]/g, '');
 
     setIsLoading(true);
     setError(null);
 
     try {
-      await authService.signUp(email, password, name, fullPhoneNumber);
+      await authService.signUp(email, password, name);
       // Wait a moment for the profile to be fully created
       await new Promise(resolve => setTimeout(resolve, 1000));
       await authService.signIn(email, password);
@@ -110,20 +75,6 @@ export default function SignupScreen() {
       setIsLoading(false);
     }
   };
-
-  const formatPhoneNumber = (text: string) => {
-    // Remove all non-numeric characters
-    const cleaned = text.replace(/\D/g, '');
-    // Format as XXX XXX XXXX
-    const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-    if (match) {
-      const parts = [match[1], match[2], match[3]].filter(Boolean);
-      return parts.join(' ');
-    }
-    return text;
-  };
-
-
 
   return (
     <KeyboardAvoidingView
@@ -172,7 +123,6 @@ export default function SignupScreen() {
               placeholderTextColor={Colors.neutral.main}
             />
           </View>
-
 
           <View style={styles.inputContainer}>
             <Lock size={20} color={Colors.neutral.main} style={styles.inputIcon} />
@@ -343,75 +293,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.primary.main,
     textDecorationLine: 'underline',
-  },
-  phoneContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  countryCodeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.neutral.border,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    height: 60,
-    marginRight: 12,
-    backgroundColor: '#fff',
-  },
-  countryCodeText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: Colors.text.dark,
-    marginRight: 4,
-  },
-  phoneInputContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.neutral.border,
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    height: 60,
-    backgroundColor: '#fff',
-  },
-  phoneInput: {
-    flex: 1,
-    fontFamily: 'Inter-Medium',
-    fontSize: 16,
-    color: Colors.text.dark,
-    paddingVertical: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: Colors.background.main,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '50%',
-  },
-  countryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.neutral.border,
-  },
-  countryCode: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: Colors.text.dark,
-    marginRight: 12,
-    width: 60,
-  },
-  countryName: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: Colors.text.medium,
   },
 });

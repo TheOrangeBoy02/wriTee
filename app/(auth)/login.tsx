@@ -1,4 +1,4 @@
-// login.tsx
+// login.tsx - Corrected Navigation
 
 import { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,14 +23,16 @@ export default function LoginScreen() {
   useEffect(() => {
     const { unsubscribe } = authService.onAuthStateChange((user) => {
       if (user) {
-        router.replace('/(tabs)');
+        // Let the RootLayout handle the navigation automatically
+        // Don't manually navigate here to avoid conflicts
+        console.log('User authenticated, RootLayout should handle navigation');
       }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [router]);
+  }, []);
 
   const validateForm = (): boolean => {
     const emailValidation = validateField(signInSchema.shape.email, email);
@@ -42,12 +44,6 @@ export default function LoginScreen() {
     return emailValidation.isValid && passwordValidation.isValid;
   };
 
-  // Add this to your login.tsx imports
-
-
-// Add this button temporarily in your JSX (after your Google sign-in button)
-
-
   const handleLogin = async () => {
     if (!validateForm()) {
       return;
@@ -58,7 +54,11 @@ export default function LoginScreen() {
 
     try {
       await authService.signIn(email, password);
-      router.replace('/(tabs)');
+      
+      // Don't manually navigate here - let RootLayout handle it
+      // The useEffect above will detect the auth state change
+      // and RootLayout will automatically navigate to /(tabs)
+      
     } catch (err: any) {
       if (err.message?.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please check your credentials.');
@@ -68,6 +68,7 @@ export default function LoginScreen() {
         setError('Too many login attempts. Please try again later.');
       } else {
         setError('Unable to sign in. Please try again.');
+        console.error('Login error:', err);
       }
     } finally {
       setIsLoading(false);
@@ -207,16 +208,27 @@ export default function LoginScreen() {
             <Text style={styles.googleButtonText}>Sign In with Google</Text>
           </TouchableOpacity>
 
+          {/* Debug buttons */}
           <TouchableOpacity 
-  style={{...styles.googleButton, backgroundColor: '#ff4444'}}
-  onPress={async () => {
-    await AsyncStorage.removeItem('hasLaunchedBefore');
-    alert('Onboarding reset! Close and restart the app.');
-  }}
->
-  
-  <Text style={{color: 'white'}}>🔄 Reset Onboarding (DEV)</Text>
-</TouchableOpacity >
+            style={{...styles.googleButton, backgroundColor: '#ff4444'}}
+            onPress={async () => {
+              await AsyncStorage.removeItem('hasLaunchedBefore');
+              alert('Onboarding reset! Close and restart the app.');
+            }}
+          >
+            <Text style={{color: 'white'}}>🔄 Reset Onboarding (DEV)</Text>
+          </TouchableOpacity>
+
+          {/* Test manual navigation - for debugging only */}
+          <TouchableOpacity 
+            style={{...styles.googleButton, backgroundColor: '#4444ff'}}
+            onPress={() => {
+              console.log('Testing manual navigation to tabs...');
+              router.replace('/(tabs)');
+            }}
+          >
+            <Text style={{color: 'white'}}>🧪 Manual Nav Test (DEV)</Text>
+          </TouchableOpacity>
 
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don&apos;t have an account? </Text>

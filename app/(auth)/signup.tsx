@@ -123,39 +123,7 @@ export default function SignupScreen() {
     return text;
   };
 
-  const renderCountryPicker = () => (
-    <Modal
-      visible={showCountryPicker}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowCountryPicker(false)}
-    >
-      <TouchableOpacity 
-        style={styles.modalOverlay}
-        activeOpacity={1} 
-        onPress={() => setShowCountryPicker(false)}
-      >
-        <View style={styles.modalContent}>
-          <FlatList
-            data={countryCodes}
-            keyExtractor={(item) => item.code}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.countryItem}
-                onPress={() => {
-                  setCountryCode(item.code);
-                  setShowCountryPicker(false);
-                }}
-              >
-                <Text style={styles.countryCode}>{item.code}</Text>
-                <Text style={styles.countryName}>{item.country}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
+
 
   return (
     <KeyboardAvoidingView
@@ -205,26 +173,6 @@ export default function SignupScreen() {
             />
           </View>
 
-          <View style={styles.phoneContainer}>
-            <TouchableOpacity
-              style={styles.countryCodeButton}
-              onPress={() => setShowCountryPicker(true)}
-            >
-              <Text style={styles.countryCodeText}>{countryCode}</Text>
-              <ChevronDown size={16} color={Colors.neutral.main} />
-            </TouchableOpacity>
-
-            <View style={styles.phoneInputContainer}>
-              <TextInput
-                style={styles.phoneInput}
-                placeholder="Phone Number *"
-                value={phoneNumber}
-                onChangeText={(text) => setPhoneNumber(formatPhoneNumber(text))}
-                keyboardType="phone-pad"
-                placeholderTextColor={Colors.neutral.main}
-              />
-            </View>
-          </View>
 
           <View style={styles.inputContainer}>
             <Lock size={20} color={Colors.neutral.main} style={styles.inputIcon} />
@@ -270,7 +218,6 @@ export default function SignupScreen() {
           </View>
         </View>
       </ScrollView>
-      {renderCountryPicker()}
     </KeyboardAvoidingView>
   );
 }

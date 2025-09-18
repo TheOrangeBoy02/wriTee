@@ -1,4 +1,4 @@
-// RootLayout.tsx - Complete Fixed Version
+// app/_layout.tsx - Updated with better route handling
 
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen, useRouter, useSegments } from 'expo-router';
@@ -61,6 +61,7 @@ export default function RootLayout() {
   // Listen to auth state changes
   useEffect(() => {
     const { unsubscribe } = authService.onAuthStateChange((user) => {
+      console.log('Auth state changed:', !!user);
       setIsAuthenticated(!!user);
       setIsInitializing(false);
     });
@@ -87,13 +88,22 @@ export default function RootLayout() {
       isFirstTime, 
       isAuthenticated, 
       inAuthGroup,
+      inTabsGroup,
       currentScreen: segments[1]
     });
 
     // If user is authenticated, go to tabs
     if (isAuthenticated) {
       if (!inTabsGroup) {
-        router.replace('/(tabs)');
+        console.log('Navigating authenticated user to tabs...');
+        // Try different navigation approaches
+        try {
+          router.replace('/(tabs)');
+        } catch (error) {
+          console.error('Navigation error:', error);
+          // Fallback navigation
+          router.replace('/');
+        }
       }
       return;
     }
@@ -105,7 +115,6 @@ export default function RootLayout() {
         if (!isOnWelcomeScreen && !isOnLoginScreen && !isOnSignupScreen) {
           router.replace('/(auth)/WelcomeScreen');
         }
-        // Let welcome screen handle navigation to login when "Get Started" is pressed
       } else {
         // Returning users go directly to login, BUT allow signup screen
         if (!isOnLoginScreen && !isOnSignupScreen) {
@@ -135,7 +144,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="journal/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="journal" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" options={{ title: 'Page Not Found' }} />
       </Stack>
       <StatusBar style="auto" />

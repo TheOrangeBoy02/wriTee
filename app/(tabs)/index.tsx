@@ -57,8 +57,11 @@ export default function HomeScreen() {
 
 
   const handleNewEntry = () => {
-    router.push('/journal/[id]?id=new');
-  };
+     router.push({
+       pathname: '/journal/[id]',
+       params: { id: 'new' }
+     });
+   };
 
   const handleRefreshPrompt = () => {
     loadRandomPrompt();

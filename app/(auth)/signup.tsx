@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, Image,TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { User, Mail, Lock, CircleAlert as AlertCircle, Eye, EyeOff } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
@@ -86,7 +86,11 @@ export default function SignupScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.title}>WriTee</Text>
+              <Image
+                                source={require('@/assets/images/writee-logo.png')}
+                                style={styles.logoImage}
+                                resizeMode="contain"
+                              />
           <Text style={styles.subtitle}>Your mindful journaling companion</Text>
         </View>
 
@@ -104,7 +108,7 @@ export default function SignupScreen() {
             <User size={20} color={Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Full Name *"
+              placeholder="Full Name"
               value={name}
               onChangeText={setName}
               placeholderTextColor={Colors.neutral.main}
@@ -115,7 +119,7 @@ export default function SignupScreen() {
             <Mail size={20} color={Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Email *"
+              placeholder="Email"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -128,7 +132,7 @@ export default function SignupScreen() {
             <Lock size={20} color={Colors.neutral.main} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Password *"
+              placeholder="Password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -182,10 +186,14 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     paddingBottom: 40,
     paddingHorizontal: 24,
+    justifyContent: 'center',
   },
+
+
   headerContainer: {
     alignItems: 'center',
     marginBottom: 48,
+  
   },
   title: {
     fontFamily: 'Playfair-Bold',
@@ -196,20 +204,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
-    fontSize: 16,
+    fontSize: 17,
     color: Colors.neutral.dark,
     textAlign: 'center',
-    lineHeight: 22,
   },
   formContainer: {
     backgroundColor: '#fff',
-    borderRadius: 20,
-    padding: 28,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
   },
   formTitle: {
     fontFamily: 'Inter-Bold',
@@ -228,6 +229,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: Colors.error.main,
   },
+
+  logoImage: {
+    width: 95,
+    height: 150,
+  },
+  
   errorText: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,

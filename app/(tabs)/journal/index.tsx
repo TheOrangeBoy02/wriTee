@@ -64,11 +64,17 @@ export default function JournalScreen() {
   };
 
   const handleNewEntry = () => {
-    router.push('/journal/[id]?id=new');
+    router.push({
+      pathname: '/journal/[id]',
+      params: { id: 'new' }
+    });
   };
 
   const handleEntryPress = (id: string) => {
-    router.push(`/journal/${id}`);
+    router.push({
+      pathname: '/journal/[id]',
+      params: { id: id }
+    });
   };
 
   const handleRefresh = async () => {
@@ -297,8 +303,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#fff',
   },
-  
-  // Tag Filter Styles
   tagFilterContainer: {
     paddingHorizontal: 24,
     paddingBottom: 16,

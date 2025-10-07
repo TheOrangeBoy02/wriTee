@@ -1,3 +1,4 @@
+// calendar.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -6,7 +7,7 @@ import { Calendar as RNCalendar, DateData } from 'react-native-calendars';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import { getJournalEntryDates } from '@/services/journal';
-import { calculateStreak } from '@/utils/streak';
+import { calculateStreaks } from '@/utils/streak';
 
 type MarkedDates = {
   [date: string]: {
@@ -34,7 +35,7 @@ export default function CalendarScreen() {
     setIsLoading(true);
     try {
       const dates = await getJournalEntryDates();
-      const streak = await calculateStreak();
+      const { currentStreak: streak } = await calculateStreaks();
       
       const marked: MarkedDates = {};
       dates.forEach(date => {

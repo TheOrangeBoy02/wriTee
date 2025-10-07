@@ -1,63 +1,75 @@
-import { updateWritingStreak, updateLastEntryDate } from '@/services/user';
+// streak.ts
+import { updateWritingStreak, updateBestStreak, updateLastEntryDate, getUserBestStreak } from '@/services/user';
 import { getJournalEntryDates } from '@/services/journal';
 
 /**
  * Calculate the current writing streak based on journal entries
  * Uses the same logic as the calendar to ensure consistency
  */
-export const calculateStreak = async (): Promise<number> => {
+
+export const calculateStreaks = async (): Promise<{ currentStreak: number; bestStreak: number }> => {
   try {
     // Use the same function as the calendar to get journal entry dates
     const entryDates = await getJournalEntryDates(true); // Force refresh to get latest data
+    
     
     console.log('📅 Entry dates from getJournalEntryDates:', entryDates);
     
     if (entryDates.length === 0) {
       console.log('🔥 No entries found, streak = 0');
-      return 0;
+      return { currentStreak: 0, bestStreak: 0 };
     }
 
-    // Remove duplicates and sort by date descending
-    const uniqueDates = [...new Set(entryDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    // Remove duplicates and sort by date ascending
+    const uniqueDates = [...new Set(entryDates)].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
 
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Helper to check if two dates are consecutive (ignoring DST issues)
+    const isConsecutive = (dateA: string, dateB: string) => {
+      const dA = new Date(dateA).setHours(0, 0, 0, 0);
+      const dB = new Date(dateB).setHours(0, 0, 0, 0);
+      const diffDays = (dB - dA) / (24 * 60 * 60 * 1000);
+      return diffDays === 1;
+    };
 
-    console.log('🔥 Today:', today, 'Yesterday:', yesterday);
-    console.log('🔥 Unique dates:', uniqueDates);
+    let bestStreak = 1;
+    let tempStreak = 1;
 
-    // Check if the most recent entry is today or yesterday
-    const mostRecentDate = uniqueDates[0];
-    console.log('🔥 Most recent entry date:', mostRecentDate);
-    
-    if (mostRecentDate !== today && mostRecentDate !== yesterday) {
-      console.log('🔥 Streak broken - most recent entry not today or yesterday');
-      return 0; // Streak is broken
-    }
-
-    // Count consecutive days starting from the most recent date
-    let streak = 0;
-    let expectedDateStr = mostRecentDate;
-
-    for (const dateStr of uniqueDates) {
-      if (dateStr === expectedDateStr) {
-        streak++;
-        console.log(`🔥 Day ${streak}: ${dateStr} matches expected ${expectedDateStr}`);
-        // Move to the previous day
-        const prevDate = new Date(expectedDateStr);
-        prevDate.setDate(prevDate.getDate() - 1);
-        expectedDateStr = prevDate.toISOString().split('T')[0];
+    for (let i = 1; i < uniqueDates.length; i++) {
+      if (isConsecutive(uniqueDates[i - 1], uniqueDates[i])) {
+        tempStreak++;
       } else {
-        console.log(`🔥 Streak ends: ${dateStr} doesn't match expected ${expectedDateStr}`);
-        break;
+        tempStreak = 1;
+      }
+      if (tempStreak > bestStreak) bestStreak = tempStreak;
+    }
+
+    // Calculate current streak (ending at today or yesterday)
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString().split('T')[0];
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayStr = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).toISOString().split('T')[0];
+    
+    let currentStreak = 0;
+    const streakEndDate = uniqueDates[uniqueDates.length - 1];
+    
+    if (streakEndDate === today || streakEndDate === yesterdayStr) {
+      currentStreak = 1;
+      for (let i = uniqueDates.length - 1; i > 0; i--) {
+        const prevDate = uniqueDates[i - 1];
+        const currDate = uniqueDates[i];
+        if (isConsecutive(prevDate, currDate)) {
+          currentStreak++;
+        } else {
+          break;
+        }
       }
     }
 
-    console.log('🔥 Final calculated streak:', streak);
-    return streak;
+    console.log('🔥 Final calculated streaks:', { currentStreak, bestStreak });
+    return { currentStreak, bestStreak };
   } catch (error) {
     console.error('Error calculating streak:', error);
-    return 0;
+    return { currentStreak: 0, bestStreak: 0 };
   }
 };
 
@@ -67,13 +79,27 @@ export const calculateStreak = async (): Promise<number> => {
 export const updateStreakAfterEntry = async (entryDate?: string): Promise<void> => {
   try {
     console.log('🔥 updateStreakAfterEntry called with entryDate:', entryDate);
-    const streak = await calculateStreak();
+    
+    const { currentStreak, bestStreak } = await calculateStreaks();
     const dateToUpdate = entryDate || new Date().toISOString();
     
-    console.log('🔥 Updating streak to:', streak);
+    console.log('🔥 Updating current streak to:', currentStreak);
+    console.log('🔥 Calculated best streak:', bestStreak);
     console.log('🔥 Updating last entry date to:', dateToUpdate);
     
-    await updateWritingStreak(streak);
+    // Update current streak
+    await updateWritingStreak(currentStreak);
+    
+    // Update best streak only if it's a new record
+    const currentBest = await getUserBestStreak();
+    if (bestStreak > currentBest) {
+      console.log('🔥 New best streak record! Updating from', currentBest, 'to', bestStreak);
+      await updateBestStreak(bestStreak);
+    } else {
+      console.log('🔥 Best streak unchanged:', currentBest);
+    }
+    
+    // Update last entry date
     await updateLastEntryDate(dateToUpdate);
     
     console.log('🔥 Streak update completed');

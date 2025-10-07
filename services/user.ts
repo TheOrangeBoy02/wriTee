@@ -25,31 +25,66 @@ export const getUsername = async (): Promise<string> => {
   }
 };
 
-export const getUserStreak = async (): Promise<number> => {
+/**
+ * Get the user's current and best writing streaks
+ */
+export const getUserStreaks = async (): Promise<{ currentStreak: number; bestStreak: number }> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    console.log('📊 getUserStreak: Fetching streak for user:', user.id);
+    console.log('📊 getUserStreaks: Fetching streaks for user:', user.id);
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('writing_streak')
+      .select('writing_streak, best_streak')
       .eq('id', user.id)
       .single();
 
     if (error) {
-      console.error('📊 getUserStreak: Database error:', error);
+      console.error('📊 getUserStreaks: Database error:', error);
       throw error;
     }
     
-    console.log('📊 getUserStreak: Raw database result:', data);
-    const streak = data?.writing_streak ?? 0;
-    console.log('📊 getUserStreak: Returning streak:', streak);
+    console.log('📊 getUserStreaks: Raw database result:', data);
     
-    return streak;
+    const currentStreak = data?.writing_streak ?? 0;
+    const bestStreak = data?.best_streak ?? 0;
+    
+    return { currentStreak, bestStreak };
   } catch (error) {
-    console.error('Error fetching user streak:', error);
+    console.error('Error fetching user streaks:', error);
+    return { currentStreak: 0, bestStreak: 0 };
+  }
+};
+
+/**
+ * Get the user's best writing streak
+ */
+export const getUserBestStreak = async (): Promise<number> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    console.log('🏆 getUserBestStreak: Fetching best streak for user:', user.id);
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('best_streak')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.error('🏆 getUserBestStreak: Database error:', error);
+      throw error;
+    }
+    
+    const bestStreak = data?.best_streak ?? 0;
+    console.log('🏆 getUserBestStreak: Best streak value:', bestStreak);
+    
+    return bestStreak;
+  } catch (error) {
+    console.error('Error fetching best streak:', error);
     return 0;
   }
 };
@@ -207,6 +242,9 @@ export const getUserProfile = async (): Promise<Profile | null> => {
   return data;
 };
 
+/**
+ * Update the user's current writing streak
+ */
 export const updateWritingStreak = async (streak: number): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
@@ -220,7 +258,7 @@ export const updateWritingStreak = async (streak: number): Promise<void> => {
       updated_at: new Date().toISOString()
     })
     .eq('id', user.id)
-    .select('writing_streak'); // Add select to see what was updated
+    .select('writing_streak');
 
   if (error) {
     console.error('💾 updateWritingStreak: Database error:', error);
@@ -229,6 +267,33 @@ export const updateWritingStreak = async (streak: number): Promise<void> => {
 
   console.log('💾 updateWritingStreak: Database update result:', data);
   console.log('💾 updateWritingStreak: Streak successfully updated to:', streak);
+};
+
+/**
+ * Update the user's best writing streak (all-time record)
+ */
+export const updateBestStreak = async (streak: number): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  console.log('🏆 updateBestStreak: Updating best streak for user:', user.id, 'to value:', streak);
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ 
+      best_streak: streak,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id)
+    .select('best_streak');
+
+  if (error) {
+    console.error('🏆 updateBestStreak: Database error:', error);
+    throw error;
+  }
+
+  console.log('🏆 updateBestStreak: Database update result:', data);
+  console.log('🏆 updateBestStreak: Best streak successfully updated to:', streak);
 };
 
 export const updateLastEntryDate = async (date: string): Promise<void> => {

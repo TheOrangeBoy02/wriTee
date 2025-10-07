@@ -1,13 +1,14 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { Flame } from 'lucide-react-native';
+import { Flame, Trophy } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 type StreakIndicatorProps = {
   streak: number;
+  label?: string;
 };
 
-export default function StreakIndicator({ streak }: StreakIndicatorProps) {
+export default function StreakIndicator({ streak, label = "Current Streak" }: StreakIndicatorProps) {
   const scale = useSharedValue(1);
   
   const animatedStyle = useAnimatedStyle(() => {
@@ -27,29 +28,20 @@ export default function StreakIndicator({ streak }: StreakIndicatorProps) {
       <View style={styles.streakCard}>
         <View style={styles.streakHeader}>
           <Animated.View style={animatedStyle}>
-            <Flame size={24} color={Colors.accent.main} />
+            {label === "Best Streak" ? (
+              <Trophy size={24} color={Colors.accent.main} />
+            ) : (
+              <Flame size={24} color={Colors.accent.main} />
+            )}
           </Animated.View>
-          <Text style={styles.streakTitle}>Current Streak</Text>
+          <Text style={styles.streakTitle}>{label}</Text>
         </View>
         
         <View style={styles.streakContent}>
           <Text style={styles.streakCount}>{streak}</Text>
-          <Text style={styles.streakLabel}>days</Text>
+          <Text style={styles.streakLabel}>Days</Text>
         </View>
         
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBackground}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${Math.min(streak / 30 * 100, 100)}%` }
-              ]} 
-            />
-          </View>
-          <Text style={styles.progressText}>
-            {streak >= 30 ? 'Monthly goal reached!' : `${30 - streak} days to monthly goal`}
-          </Text>
-        </View>
       </View>
     </View>
   );
@@ -63,16 +55,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.light,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+   
   },
   streakHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
   streakTitle: {
     fontFamily: 'Inter-SemiBold',
@@ -83,11 +70,11 @@ const styles = StyleSheet.create({
   streakContent: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginBottom: 16,
+    marginBottom: 6,
   },
   streakCount: {
     fontFamily: 'Playfair-Bold',
-    fontSize: 40,
+    fontSize: 60,
     color: Colors.text.dark,
   },
   streakLabel: {
@@ -95,7 +82,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.text.medium,
     marginLeft: 8,
-    marginBottom: 8,
+    marginBottom: 18,
   },
   progressContainer: {
     marginTop: 8,

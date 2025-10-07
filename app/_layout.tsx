@@ -41,6 +41,8 @@ export default function RootLayout() {
     'Inter-Bold': Inter_700Bold,
     'Playfair-SemiBold': PlayfairDisplay_600SemiBold,
     'Playfair-Bold': PlayfairDisplay_700Bold,
+    'ComforterBrush_400Regular': require('@/assets/fonts/ComforterBrush-Regular.ttf'),
+    'FleurDeLeah_400Regular': require('@/assets/fonts/FleurDeLeah-Regular.ttf'),
   });
 
   // Check if it's first time launch

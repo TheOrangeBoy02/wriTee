@@ -195,7 +195,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* Google Sign In Button */}
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.googleButton}
             onPress={handleGoogleSignIn}
             disabled={isLoading}
@@ -206,9 +206,9 @@ export default function LoginScreen() {
               resizeMode="contain"
             />
             <Text style={styles.googleButtonText}>Sign In with Google</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
-          {/* Debug buttons */}
+          {/* Debug buttons
           <TouchableOpacity 
             style={{...styles.googleButton, backgroundColor: '#ff4444'}}
             onPress={async () => {
@@ -217,18 +217,7 @@ export default function LoginScreen() {
             }}
           >
             <Text style={{color: 'white'}}>🔄 Reset Onboarding (DEV)</Text>
-          </TouchableOpacity>
-
-          {/* Test manual navigation - for debugging only */}
-          <TouchableOpacity 
-            style={{...styles.googleButton, backgroundColor: '#4444ff'}}
-            onPress={() => {
-              console.log('Testing manual navigation to tabs...');
-              router.replace('/(tabs)');
-            }}
-          >
-            <Text style={{color: 'white'}}>🧪 Manual Nav Test (DEV)</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don&apos;t have an account? </Text>

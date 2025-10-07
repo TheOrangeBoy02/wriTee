@@ -1,7 +1,7 @@
 // app/(tabs)/index.tsx
 
 import { useState, useEffect, useMemo } from 'react';
-import { View,ScrollView, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { BookOpen, RefreshCw, Pencil, Sparkles } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
@@ -9,15 +9,20 @@ import Header from '@/components/Header';
 import StreakIndicator from '@/components/StreakIndicator';
 import JournalPrompt from '@/components/JournalPrompt';
 import { getRandomPrompt } from '@/services/prompts';
-import { getUserStreak, getUsername } from '@/services/user';
+import { getUserStreaks, getUsername } from '@/services/user';
+import { getRecentJournalEntries } from '@/services/journal';
+import MinimalRecentEntry from '@/components/MinimalRecentEntry';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [greeting, setGreeting] = useState('');
   const [username, setUsername] = useState('');
-  const [streak, setStreak] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [recentEntries, setRecentEntries] = useState<import('@/types').JournalEntry[]>([]);
 
   const getGreeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -30,14 +35,16 @@ export default function HomeScreen() {
     loadUserData();
     setGreeting(getGreeting);
     loadRandomPrompt();
+    loadRecentEntries();
   }, [getGreeting]);
 
   const loadUserData = async () => {
     try {
       const name = await getUsername();
-      const userStreak = await getUserStreak();
+      const { currentStreak, bestStreak } = await getUserStreaks();
       setUsername(name);
-      setStreak(userStreak);
+      setCurrentStreak(currentStreak);
+      setBestStreak(bestStreak);
     } catch (error) {
       console.error('Error loading user data:', error);
     } finally {
@@ -55,13 +62,40 @@ export default function HomeScreen() {
     }
   };
 
+  const loadRecentEntries = async () => {
+    try {
+      const entries = await getRecentJournalEntries(3);
+      setRecentEntries(entries);
+    } catch (error) {
+      console.error('Error loading recent entries:', error);
+      setRecentEntries([]);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Reload all data
+      await Promise.all([
+        loadUserData(),
+        loadRandomPrompt(),
+        loadRecentEntries()
+      ]);
+      // Update greeting in case time has changed
+      setGreeting(getGreeting);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleNewEntry = () => {
-     router.push({
-       pathname: '/journal/[id]',
-       params: { id: 'new' }
-     });
-   };
+    router.push({
+      pathname: '/journal/[id]',
+      params: { id: 'new', prompt }
+    });
+  };
 
   const handleRefreshPrompt = () => {
     loadRandomPrompt();
@@ -78,14 +112,28 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <Header />
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.primary.main]}
+            tintColor={Colors.primary.main}
+            progressBackgroundColor={Colors.background.light}
+          />
+        }
+      >
         <View style={styles.greetingContainer}>
           <Text style={styles.greeting}>{greeting},</Text>
           <Text style={styles.username}>{username || 'Writer'}</Text>
         </View>
 
         <View style={styles.streakContainer}>
-          <StreakIndicator streak={streak} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <StreakIndicator streak={currentStreak} label="Current Streak" />
+            <StreakIndicator streak={bestStreak} label="Best Streak" />
+          </View>
         </View>
 
         <View style={styles.promptSection}>
@@ -115,12 +163,40 @@ export default function HomeScreen() {
 
         <View style={styles.recentSection}>
           <Text style={styles.sectionTitle}>Recent Entries</Text>
+          {recentEntries.length === 0 ? (
+            <Text style={{ color: Colors.text.medium, marginBottom: 8 }}>No recent entries found.</Text>
+          ) : (
+            recentEntries.map(entry => (
+              <MinimalRecentEntry
+                key={entry.id}
+                entry={entry}
+                onPress={() => router.push(`/journal/${entry.id}`)}
+              />
+            ))
+          )}
+          {/* View All Entries button */}
           <TouchableOpacity 
-            style={styles.recentEntryCard}
+            style={{
+              backgroundColor: Colors.background.main,
+              borderWidth: 1,
+              borderColor: Colors.primary.main,
+              paddingVertical: 14,
+              paddingHorizontal: 24,
+              marginTop: 16,
+              borderRadius: 30,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
             onPress={() => router.push('/journal')}
           >
-            <BookOpen size={20} color={Colors.primary.main} />
-            <Text style={styles.viewAllText}>View All Entries</Text>
+            <BookOpen size={24} color="#af1dbf" />
+            <Text style={{
+              fontFamily: 'Inter-Bold',
+              fontSize: 18,
+              marginLeft: 12,
+              color: Colors.primary.main,
+            }}>View All Entries</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -153,11 +229,14 @@ const styles = StyleSheet.create({
     color: Colors.text.medium,
   },
   username: {
-    fontFamily: 'Playfair-Bold',
-    fontSize: 32,
+    fontFamily: 'ComforterBrush_400Regular',
+    fontSize: 50,
     color: Colors.text.dark,
   },
   streakContainer: {
+    alignContent: 'center',
+    backgroundColor: Colors.background.light,
+    borderRadius: 16,
     marginBottom: 32,
   },
   promptSection: {
@@ -165,11 +244,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   promptHeader: {
     flexDirection: 'row',

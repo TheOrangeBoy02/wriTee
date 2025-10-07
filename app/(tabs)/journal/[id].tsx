@@ -1,19 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Image, GestureResponderEvent } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, Save, Trash2, Bold, Italic, Underline, X } from 'lucide-react-native';
+import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
 import { getRandomPrompt } from '@/services/prompts';
 import { JournalEntry } from '@/types';
 
+
+
 export default function JournalEntryScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, prompt: navPrompt } = useLocalSearchParams<{ id: string; prompt?: string }>();
   const [entry, setEntry] = useState<JournalEntry | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  // view mode is when not editing
+  const isViewMode = !isEditing;
   const [isSaving, setIsSaving] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState('');
@@ -25,6 +29,23 @@ export default function JournalEntryScreen() {
   });
   const contentInputRef = useRef<TextInput>(null);
   const router = useRouter();
+
+  // Double-tap detection (simple): track last tap timestamp
+  const lastTapRef = useRef<number | null>(null);
+
+  const handleContentDoubleTap = (event?: GestureResponderEvent) => {
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // ms
+    if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // double-tap detected
+      setIsEditing(true);
+      // focus the input after a small delay so it exists in layout
+      setTimeout(() => contentInputRef.current?.focus(), 50);
+      lastTapRef.current = null;
+    } else {
+      lastTapRef.current = now;
+    }
+  };
 
   // Calculate word count
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
@@ -46,13 +67,18 @@ export default function JournalEntryScreen() {
   };
 
   useEffect(() => {
-    if (id === 'ne' || id === '[id]') {
+    if (id === 'new' || id === '[id]') {
       // New entry
       setIsLoading(false);
       setIsEditing(true);
       setTitle('');
       setContent('');
-      loadPrompt();
+      if (navPrompt) {
+        setCurrentPrompt(navPrompt);
+        setShowPrompt(true);
+      } else {
+        loadPrompt();
+      }
     } else {
       // Existing entry
       loadEntry();
@@ -226,6 +252,20 @@ export default function JournalEntryScreen() {
               <Trash2 size={20} color={Colors.error.main} />
             </TouchableOpacity>
           )}
+
+          {/* Edit / Done toggle */}
+          {!isEditing && (
+                <TouchableOpacity 
+                  onPress={() => {
+                    setIsEditing(true);
+                    setTimeout(() => contentInputRef.current?.focus(), 50);
+                  }} 
+                  style={styles.editToggleButton}
+                >
+                  <Pencil size={16} color={Colors.primary.main} />
+                </TouchableOpacity>
+            
+            )}
         </View>
       </View>
 
@@ -234,26 +274,38 @@ export default function JournalEntryScreen() {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
-        <TextInput
-          style={styles.titleInput}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Journal Title"
-          placeholderTextColor={Colors.text.medium}
-          maxLength={100}
-        />
-        
-        <TextInput
-          ref={contentInputRef}
-          style={styles.contentInput}
-          value={content}
-          onChangeText={setContent}
-          onSelectionChange={(event) => setSelection(event.nativeEvent.selection)}
-          placeholder="Start writing your thoughts here..."
-          placeholderTextColor={Colors.text.medium}
-          multiline
-          textAlignVertical="top"
-        />
+        {/* Title stays editable when in editing mode, otherwise render as Text */}
+        {isViewMode ? (
+          <TouchableOpacity activeOpacity={0.9} onPress={handleContentDoubleTap} onLongPress={() => setIsEditing(true)}>
+            <Text style={[styles.titleInput, { fontFamily: 'Playfair-Bold', fontSize:30, color:Colors.primary.main }]}>{title || 'Journal Title'}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TextInput
+            style={styles.titleInput}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Journal Title"
+            placeholderTextColor={Colors.text.medium}
+            maxLength={100}
+          />
+        )}
+        {isViewMode ? (
+          <TouchableOpacity activeOpacity={0.95} onPress={handleContentDoubleTap} onLongPress={() => setIsEditing(true)}>
+            <Text style={styles.contentInput}>{content || 'Start writing your thoughts here...'}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TextInput
+            ref={contentInputRef}
+            style={styles.contentInput}
+            value={content}
+            onChangeText={setContent}
+            onSelectionChange={(event) => setSelection(event.nativeEvent.selection)}
+            placeholder="Start writing your thoughts here..."
+            placeholderTextColor={Colors.text.medium}
+            multiline
+            textAlignVertical="top"
+          />
+        )}
       </ScrollView>
 
       {/* Prompt Section */}
@@ -274,8 +326,9 @@ export default function JournalEntryScreen() {
         </View>
       )}
 
-      {/* Bottom Toolbar */}
-      <View style={styles.bottomToolbar}>
+      {/* Bottom Toolbar - only show in edit mode */}
+      {!isViewMode && (
+        <View style={styles.bottomToolbar}>
         <View style={styles.formatButtons}>
           <TouchableOpacity 
             style={[styles.formatButton, currentFormat.bold && styles.formatButtonActive]} 
@@ -305,10 +358,11 @@ export default function JournalEntryScreen() {
           {isSaving ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.saveButtonText}>Save <Save style={styles.saveButton} /></Text>
+            <Text style={styles.saveButtonText}>Save </Text>
           )}
         </TouchableOpacity>
       </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -340,8 +394,12 @@ const styles = StyleSheet.create({
     width: 40,
   },
   headerCenter: {
-    flex: 1,
+    paddingTop: 64,
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   logoContainer: {
     width: 40,
@@ -360,10 +418,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.medium,
   },
-  headerRight: {
-    width: 40,
-    alignItems: 'flex-end',
+ headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
+
   deleteButton: {
     padding: 8,
   },
@@ -468,5 +528,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     fontSize: 16,
     color: 'white',
+  },
+  editToggleButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: Colors.primary.light,
+  },
+  editToggleText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 12,
+    color: Colors.primary.main,
   },
 });

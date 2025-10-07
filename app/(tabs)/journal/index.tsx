@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Search, Calendar, PenLine, RefreshCw, X } from 'lucide-react-native';
+import { Plus, Search, Calendar, PenLine, RefreshCw, X, Bold } from 'lucide-react-native';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
@@ -9,6 +10,18 @@ import { getJournalEntries, getAllTags, getJournalEntriesByTags } from '@/servic
 import { JournalEntry } from '@/types';
 
 export default function JournalScreen() {
+  // Custom empty state for search
+  const renderSearchEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Search size={64} color={Colors.neutral.light} />
+      <Text style={styles.emptyTitle}>Searched word not found</Text>
+      <Text style={styles.emptyText}>
+        Try a different word or check your spelling.
+      </Text>
+    </View>
+  );
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -20,6 +33,14 @@ export default function JournalScreen() {
     loadEntries();
     loadTags();
   }, []);
+
+  // Reload entries every time screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      loadEntries();
+      loadTags();
+    }, [])
+  );
 
   useEffect(() => {
     loadFilteredEntries();
@@ -48,18 +69,17 @@ export default function JournalScreen() {
 
   const loadFilteredEntries = async () => {
     if (selectedTags.length === 0) {
-      loadEntries();
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { entries: filteredEntries } = await getJournalEntriesByTags(selectedTags);
-      setEntries(filteredEntries);
-    } catch (error) {
-      console.error('Error loading filtered entries:', error);
-    } finally {
-      setIsLoading(false);
+      await loadEntries();
+    } else {
+      setIsLoading(true);
+      try {
+        const { entries: filteredEntries } = await getJournalEntriesByTags(selectedTags);
+        setEntries(filteredEntries);
+      } catch (error) {
+        console.error('Error loading filtered entries:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -120,8 +140,11 @@ export default function JournalScreen() {
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>Journal</Text>
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.searchButton}>
-            <Search size={20} color={Colors.text.medium} />
+          <TouchableOpacity
+            style={[styles.searchButton, showSearch && styles.searchButtonActive]}
+            onPress={() => setShowSearch((prev) => !prev)}
+          >
+            <Search size={20} color={showSearch ? Colors.primary.main : Colors.text.medium} />
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.refreshButton}
@@ -134,14 +157,27 @@ export default function JournalScreen() {
               <RefreshCw size={20} color={Colors.text.medium} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.calendarButton}
-            onPress={() => router.push('/calendar')}
-          >
-            <Calendar size={20} color={Colors.text.medium} />
-          </TouchableOpacity>
         </View>
       </View>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <View style={styles.searchBarContainer}>
+          <TextInput
+            style={styles.searchInput}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            placeholder="Search journal entries..."
+            placeholderTextColor={Colors.text.medium}
+            autoFocus
+          />
+          {searchTerm.length > 0 && (
+            <TouchableOpacity style={styles.clearSearchButton} onPress={() => setSearchTerm('')}>
+              <X size={18} color={Colors.text.medium} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Tag Filter Section */}
       {availableTags.length > 0 && (
@@ -185,7 +221,22 @@ export default function JournalScreen() {
         </View>
       ) : (
         <FlatList
-          data={entries}
+          data={entries
+            .slice() // copy to avoid mutating state
+            .sort((a, b) => {
+              // Sort descending by updated_at, fallback to created_at
+              const aDate = new Date(a.updated_at || a.created_at || 0).getTime();
+              const bDate = new Date(b.updated_at || b.created_at || 0).getTime();
+              return bDate - aDate;
+            })
+            .filter(e => {
+              if (!searchTerm.trim()) return true;
+              const term = searchTerm.trim().toLowerCase();
+              return (
+                e.title.toLowerCase().includes(term) ||
+                e.content.toLowerCase().includes(term)
+              );
+            })}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <JournalEntryItem
@@ -195,7 +246,16 @@ export default function JournalScreen() {
           )}
           contentContainerStyle={styles.entriesList}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
+          ListEmptyComponent={searchTerm.trim() ? renderSearchEmptyState : renderEmptyState}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={[Colors.primary.main]}
+              tintColor={Colors.primary.main}
+              progressBackgroundColor={Colors.background.light}
+            />
+          }
         />
       )}
 
@@ -207,6 +267,29 @@ export default function JournalScreen() {
 }
 
 const styles = StyleSheet.create({
+  searchBarContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.light,
+    marginHorizontal: 24,
+    marginBottom: 8,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    height: 40,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: Colors.text.dark,
+    padding: 0,
+   
+  },
+  clearSearchButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background.main,
@@ -233,6 +316,9 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     marginRight: 12,
+  },
+  searchButtonActive: {
+    backgroundColor: Colors.primary.light,
   },
   refreshButton: {
     backgroundColor: Colors.background.light,
@@ -265,11 +351,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+   
   },
   emptyContainer: {
     flex: 1,

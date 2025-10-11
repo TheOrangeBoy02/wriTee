@@ -1,3 +1,4 @@
+// app/(tabs)/journal/[id].tsx
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Image, GestureResponderEvent } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -6,8 +7,8 @@ import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
 import { getRandomPrompt } from '@/services/prompts';
 import { JournalEntry } from '@/types';
-
-
+import { useStreaks } from '@/context/StreakContext';
+import { updateStreakAfterEntry } from '@/utils/streak';
 
 export default function JournalEntryScreen() {
   const { id, prompt: navPrompt } = useLocalSearchParams<{ id: string; prompt?: string }>();
@@ -16,30 +17,22 @@ export default function JournalEntryScreen() {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  // view mode is when not editing
-  const isViewMode = !isEditing;
   const [isSaving, setIsSaving] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [selection, setSelection] = useState({ start: 0, end: 0 });
-  const [currentFormat, setCurrentFormat] = useState<{bold: boolean, italic: boolean, underline: boolean}>({
-    bold: false,
-    italic: false,
-    underline: false
-  });
+  const [currentFormat, setCurrentFormat] = useState({ bold: false, italic: false, underline: false });
   const contentInputRef = useRef<TextInput>(null);
   const router = useRouter();
+  const { refreshStreaks } = useStreaks(); // NEW: to refresh streaks after saving
 
-  // Double-tap detection (simple): track last tap timestamp
+  // Double-tap detection
   const lastTapRef = useRef<number | null>(null);
-
   const handleContentDoubleTap = (event?: GestureResponderEvent) => {
     const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300; // ms
+    const DOUBLE_TAP_DELAY = 300;
     if (lastTapRef.current && now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // double-tap detected
       setIsEditing(true);
-      // focus the input after a small delay so it exists in layout
       setTimeout(() => contentInputRef.current?.focus(), 50);
       lastTapRef.current = null;
     } else {
@@ -47,12 +40,10 @@ export default function JournalEntryScreen() {
     }
   };
 
-  // Calculate word count
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   const loadEntry = async () => {
     if (!id || id === 'new' || id === '[id]') return;
-    
     try {
       const entryData = await getJournalEntry(id);
       setEntry(entryData);
@@ -68,7 +59,6 @@ export default function JournalEntryScreen() {
 
   useEffect(() => {
     if (id === 'new' || id === '[id]') {
-      // New entry
       setIsLoading(false);
       setIsEditing(true);
       setTitle('');
@@ -80,10 +70,8 @@ export default function JournalEntryScreen() {
         loadPrompt();
       }
     } else {
-      // Existing entry
       loadEntry();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadPrompt = async () => {
@@ -96,7 +84,7 @@ export default function JournalEntryScreen() {
     }
   };
 
-
+  // UPDATED: handleSave with streak refresh
   const handleSave = async () => {
     if (!title.trim()) {
       Alert.alert('Missing Title', 'Please enter a title for your journal entry.');
@@ -114,16 +102,23 @@ export default function JournalEntryScreen() {
         id: (id === 'new' || id === '[id]') ? undefined : id,
         title: title.trim(),
         content: content.trim(),
-        entry_date: (id === 'new' || id === '[id]') ? new Date().toISOString() : entry?.entry_date || new Date().toISOString(),
+        entry_date: (id === 'new' || id === '[id]')
+          ? new Date().toISOString()
+          : entry?.entry_date || new Date().toISOString(),
       };
 
       const savedEntry = await updateJournalEntry(updatedEntry);
+
+      // Update streaks and refresh context
+      const entryDateStr = savedEntry.entry_date.split('T')[0];
+      await updateStreakAfterEntry(entryDateStr);
+      await refreshStreaks();
+
       setIsEditing(false);
-      
+
       if (id === 'new' || id === '[id]') {
         router.back();
       } else {
-        // Refresh the entry data after edit
         setEntry(savedEntry);
       }
     } catch (error) {
@@ -140,8 +135,8 @@ export default function JournalEntryScreen() {
       'Are you sure you want to delete this journal entry? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -153,60 +148,43 @@ export default function JournalEntryScreen() {
               console.error('Error deleting entry:', error);
               Alert.alert('Error', 'Failed to delete your entry. Please try again.');
             }
-          }
+          },
         },
       ]
     );
   };
 
   const formatText = (formatType: string) => {
-    // Toggle the format state
     setCurrentFormat(prev => ({
       ...prev,
-      [formatType]: !prev[formatType as keyof typeof prev]
+      [formatType]: !prev[formatType as keyof typeof prev],
     }));
 
-    // For now, we'll just add markdown-like indicators that the user can see
-    // In a future update, this could be enhanced with a proper rich text solution
     const { start, end } = selection;
     const selectedText = content.substring(start, end);
     const hasSelection = start !== end;
-    
     let before = '';
     let after = '';
     let newText = '';
-    
+
     switch (formatType) {
       case 'bold':
-        before = '**';
-        after = '**';
-        newText = hasSelection ? selectedText : 'bold text';
-        break;
+        before = '**'; after = '**'; newText = hasSelection ? selectedText : 'bold text'; break;
       case 'italic':
-        before = '*';
-        after = '*';
-        newText = hasSelection ? selectedText : 'italic text';
-        break;
+        before = '*'; after = '*'; newText = hasSelection ? selectedText : 'italic text'; break;
       case 'underline':
-        before = '_';
-        after = '_';
-        newText = hasSelection ? selectedText : 'underlined text';
-        break;
+        before = '_'; after = '_'; newText = hasSelection ? selectedText : 'underlined text'; break;
       default:
         return;
     }
-    
+
     const formattedText = before + newText + after;
     const newContent = content.substring(0, start) + formattedText + content.substring(end);
-    
     setContent(newContent);
-    
-    // Set cursor position after formatting
+
     setTimeout(() => {
       const newCursorPos = hasSelection ? start + formattedText.length : start + before.length + newText.length + after.length;
-      contentInputRef.current?.setNativeProps({
-        selection: { start: newCursorPos, end: newCursorPos }
-      });
+      contentInputRef.current?.setNativeProps({ selection: { start: newCursorPos, end: newCursorPos } });
     }, 10);
   };
 
@@ -218,66 +196,49 @@ export default function JournalEntryScreen() {
     );
   }
 
+  const isViewMode = !isEditing;
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
-    >
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ArrowLeft size={24} color={Colors.text.dark} />
         </TouchableOpacity>
-        
+
         <View style={styles.headerCenter}>
           <View style={styles.logoContainer}>
-                <Image
-                               source={require('@/assets/images/writee-logo.png')}
-                              style={{ width: 40, height: 40 }}
-                               resizeMode="contain"
-                             />
+            <Image source={require('@/assets/images/writee-logo.png')} style={{ width: 40, height: 40 }} resizeMode="contain" />
           </View>
           <Text style={styles.wordCount}>{wordCount} Words</Text>
         </View>
-        
+
         <View style={styles.headerRight}>
           {id !== 'new' && id !== '[id]' && (
-            <TouchableOpacity 
-              style={styles.deleteButton}
-              onPress={handleDelete}
-            >
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
               <Trash2 size={20} color={Colors.error.main} />
             </TouchableOpacity>
           )}
-
-          {/* Edit / Done toggle */}
           {!isEditing && (
-                <TouchableOpacity 
-                  onPress={() => {
-                    setIsEditing(true);
-                    setTimeout(() => contentInputRef.current?.focus(), 50);
-                  }} 
-                  style={styles.editToggleButton}
-                >
-                  <Pencil size={16} color={Colors.primary.main} />
-                </TouchableOpacity>
-            
-            )}
+            <TouchableOpacity
+              onPress={() => {
+                setIsEditing(true);
+                setTimeout(() => contentInputRef.current?.focus(), 50);
+              }}
+              style={styles.editToggleButton}
+            >
+              <Pencil size={16} color={Colors.primary.main} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      <ScrollView 
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Title stays editable when in editing mode, otherwise render as Text */}
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
         {isViewMode ? (
           <TouchableOpacity activeOpacity={0.9} onPress={handleContentDoubleTap} onLongPress={() => setIsEditing(true)}>
-            <Text style={[styles.titleInput, { fontFamily: 'Playfair-Bold', fontSize:30, color:Colors.primary.main }]}>{title || 'Journal Title'}</Text>
+            <Text style={[styles.titleInput, { fontFamily: 'Playfair-Bold', fontSize: 30, color: Colors.primary.main }]}>
+              {title || 'Journal Title'}
+            </Text>
           </TouchableOpacity>
         ) : (
           <TextInput
@@ -289,6 +250,7 @@ export default function JournalEntryScreen() {
             maxLength={100}
           />
         )}
+
         {isViewMode ? (
           <TouchableOpacity activeOpacity={0.95} onPress={handleContentDoubleTap} onLongPress={() => setIsEditing(true)}>
             <Text style={styles.contentInput}>{content || 'Start writing your thoughts here...'}</Text>
@@ -308,17 +270,13 @@ export default function JournalEntryScreen() {
         )}
       </ScrollView>
 
-      {/* Prompt Section */}
       {showPrompt && currentPrompt && (
         <View style={styles.promptContainer}>
           <View style={styles.promptHeader}>
             <View style={styles.promptLabel}>
               <Text style={styles.promptText}>Prompt</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.closePromptButton}
-              onPress={() => setShowPrompt(false)}
-            >
+            <TouchableOpacity style={styles.closePromptButton} onPress={() => setShowPrompt(false)}>
               <X size={16} color={Colors.text.medium} />
             </TouchableOpacity>
           </View>
@@ -326,42 +284,24 @@ export default function JournalEntryScreen() {
         </View>
       )}
 
-      {/* Bottom Toolbar - only show in edit mode */}
       {!isViewMode && (
         <View style={styles.bottomToolbar}>
-        <View style={styles.formatButtons}>
-          <TouchableOpacity 
-            style={[styles.formatButton, currentFormat.bold && styles.formatButtonActive]} 
-            onPress={() => formatText('bold')}
-          >
-            <Bold size={20} color={currentFormat.bold ? Colors.primary.main : Colors.text.dark} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.formatButton, currentFormat.italic && styles.formatButtonActive]} 
-            onPress={() => formatText('italic')}
-          >
-            <Italic size={20} color={currentFormat.italic ? Colors.primary.main : Colors.text.dark} />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.formatButton, currentFormat.underline && styles.formatButtonActive]} 
-            onPress={() => formatText('underline')}
-          >
-            <Underline size={20} color={currentFormat.underline ? Colors.primary.main : Colors.text.dark} />
+          <View style={styles.formatButtons}>
+            <TouchableOpacity style={[styles.formatButton, currentFormat.bold && styles.formatButtonActive]} onPress={() => formatText('bold')}>
+              <Bold size={20} color={currentFormat.bold ? Colors.primary.main : Colors.text.dark} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.formatButton, currentFormat.italic && styles.formatButtonActive]} onPress={() => formatText('italic')}>
+              <Italic size={20} color={currentFormat.italic ? Colors.primary.main : Colors.text.dark} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.formatButton, currentFormat.underline && styles.formatButtonActive]} onPress={() => formatText('underline')}>
+              <Underline size={20} color={currentFormat.underline ? Colors.primary.main : Colors.text.dark} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
+            {isSaving ? <ActivityIndicator size="small" color="white" /> : <Text style={styles.saveButtonText}>Save</Text>}
           </TouchableOpacity>
         </View>
-        
-        <TouchableOpacity 
-          style={styles.saveButton}
-          onPress={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save </Text>
-          )}
-        </TouchableOpacity>
-      </View>
       )}
     </KeyboardAvoidingView>
   );

@@ -1,4 +1,4 @@
-// calendar.tsx
+// app/(tabs)/calendar.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -7,7 +7,7 @@ import { Calendar as RNCalendar, DateData } from 'react-native-calendars';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import { getJournalEntryDates } from '@/services/journal';
-import { calculateStreaks } from '@/utils/streak';
+import { useStreaks } from '@/context/StreakContext';
 
 type MarkedDates = {
   [date: string]: {
@@ -16,26 +16,41 @@ type MarkedDates = {
   };
 };
 
+// Helper to get local date string
+const getLocalDateString = (date: Date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function CalendarScreen() {
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [currentStreak, setCurrentStreak] = useState(0);
   const [streakDates, setStreakDates] = useState<string[]>([]);
   const router = useRouter();
 
+  // Use streak context
+  const { currentStreak } = useStreaks();
+
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     setSelectedDate(today);
-    updateMonthTitle(today);
     loadJournalDates();
   }, []);
+
+  // Recalculate streak visualization when currentStreak changes
+  useEffect(() => {
+    if (!isLoading) {
+      calculateStreakVisualization();
+    }
+  }, [currentStreak, isLoading]);
 
   const loadJournalDates = async () => {
     setIsLoading(true);
     try {
       const dates = await getJournalEntryDates();
-      const { currentStreak: streak } = await calculateStreaks();
       
       const marked: MarkedDates = {};
       dates.forEach(date => {
@@ -43,30 +58,7 @@ export default function CalendarScreen() {
       });
       
       setMarkedDates(marked);
-      setCurrentStreak(streak);
-      
-      // Calculate streak dates for visualization
-      if (streak > 0 && dates.length > 0) {
-        const sortedDates = [...dates].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-        const streakDatesList: string[] = [];
-        const today = new Date().toISOString().split('T')[0];
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        
-        let expectedDateStr = sortedDates[0] === today ? today : yesterday;
-        
-        for (let i = 0; i < streak && i < 7; i++) { // Show max 7 days in visualization
-          if (sortedDates.includes(expectedDateStr)) {
-            streakDatesList.push(expectedDateStr);
-          }
-          const prevDate = new Date(expectedDateStr);
-          prevDate.setDate(prevDate.getDate() - 1);
-          expectedDateStr = prevDate.toISOString().split('T')[0];
-        }
-        
-        setStreakDates(streakDatesList.reverse()); // Show oldest to newest
-      } else {
-        setStreakDates([]);
-      }
+      calculateStreakVisualization();
     } catch (error) {
       console.error('Error loading journal dates:', error);
     } finally {
@@ -74,8 +66,39 @@ export default function CalendarScreen() {
     }
   };
 
-  const updateMonthTitle = (date: string) => {
-    // Month title logic if needed in the future
+  const calculateStreakVisualization = async () => {
+    try {
+      const dates = await getJournalEntryDates();
+      
+      if (currentStreak > 0 && dates.length > 0) {
+        const sortedDates = [...dates].sort((a, b) => 
+          new Date(b).getTime() - new Date(a).getTime()
+        );
+        
+        const streakDatesList: string[] = [];
+        const today = getLocalDateString();
+        const yesterday = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+        
+        let expectedDateStr = sortedDates[0] === today ? today : yesterday;
+        
+        // Show max 7 days in visualization
+        for (let i = 0; i < currentStreak && i < 7; i++) {
+          if (sortedDates.includes(expectedDateStr)) {
+            streakDatesList.push(expectedDateStr);
+          }
+          const prevDate = new Date(expectedDateStr);
+          prevDate.setDate(prevDate.getDate() - 1);
+          expectedDateStr = getLocalDateString(prevDate);
+        }
+        
+        setStreakDates(streakDatesList.reverse());
+      } else {
+        setStreakDates([]);
+      }
+    } catch (error) {
+      console.error('Error calculating streak visualization:', error);
+      setStreakDates([]);
+    }
   };
 
   const handleDayPress = (day: DateData) => {
@@ -83,10 +106,8 @@ export default function CalendarScreen() {
     const hasEntry = markedDates[day.dateString]?.marked;
     
     if (hasEntry) {
-      // Navigate to the entry for this date
       router.push(`/journal/${day.dateString}`);
     } else {
-      // Create new entry for this date
       router.push({
         pathname: '/journal/[id]',
         params: { id: 'new', date: day.dateString }
@@ -95,7 +116,7 @@ export default function CalendarScreen() {
   };
 
   const handleMonthChange = (month: DateData) => {
-    updateMonthTitle(month.dateString);
+    // Month change logic if needed
   };
 
   const calendarMarkedDates = useMemo(() => ({
@@ -121,7 +142,7 @@ export default function CalendarScreen() {
           {Array.from({ length: 7 }, (_, index) => {
             const date = new Date();
             date.setDate(date.getDate() - (6 - index));
-            const dateStr = date.toISOString().split('T')[0];
+            const dateStr = getLocalDateString(date);
             const dayName = daysOfWeek[date.getDay()];
             const hasEntry = streakDates.includes(dateStr);
             
@@ -210,18 +231,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  monthHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-  },
-  monthTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
-    color: Colors.text.dark,
-    marginLeft: 8,
-  },
   legend: {
     flexDirection: 'row',
     paddingHorizontal: 24,
@@ -244,8 +253,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text.medium,
   },
-  
-  // Streak Visualization
   streakContainer: {
     backgroundColor: Colors.background.light,
     marginHorizontal: 20,

@@ -131,8 +131,8 @@ export default function HomeScreen() {
 
         <View style={styles.streakContainer}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <StreakIndicator streak={currentStreak} label="Current Streak" />
-            <StreakIndicator streak={bestStreak} label="Best Streak" />
+           <StreakIndicator streak={currentStreak} label="Current Streak"/>
+           <StreakIndicator streak={bestStreak} label="Best Streak"/>
           </View>
         </View>
 

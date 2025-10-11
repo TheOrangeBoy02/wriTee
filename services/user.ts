@@ -1,5 +1,83 @@
+// services/user.ts
 import { UserSettings, Profile } from '@/types';
 import { supabase } from './supabase';
+
+// ====================================
+// NEW: Atomic Streak Update via RPC
+// ====================================
+
+/**
+ * Response type for the update_user_streaks RPC function
+ */
+interface UpdateStreaksResponse {
+  success: boolean;
+  current_streak: number;
+  best_streak: number;
+  is_new_record: boolean;
+}
+
+/**
+ * Atomically update user streaks using a single database transaction
+ * This replaces the old three-call approach for better data consistency
+ * 
+ * @param userId - The user's UUID
+ * @param currentStreak - Current writing streak count
+ * @param bestStreak - Calculated best streak (will only update if greater than DB value)
+ * @param lastEntryDate - Date of the most recent entry (YYYY-MM-DD format)
+ * @returns Promise with update results
+ */
+export const updateUserStreaks = async (
+  userId: string,
+  currentStreak: number,
+  bestStreak: number,
+  lastEntryDate: string
+): Promise<UpdateStreaksResponse> => {
+  try {
+    console.log('🔄 updateUserStreaks: Calling RPC with:', {
+      userId,
+      currentStreak,
+      bestStreak,
+      lastEntryDate
+    });
+
+    const { data, error } = await supabase.rpc('update_user_streaks', {
+      p_user_id: userId,
+      p_current_streak: currentStreak,
+      p_best_streak: bestStreak,
+      p_last_entry_date: lastEntryDate
+    });
+
+    if (error) {
+      console.error('❌ updateUserStreaks: RPC error:', error);
+      throw error;
+    }
+
+    console.log('✅ updateUserStreaks: RPC success:', data);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ updateUserStreaks: Failed to update streaks:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get the current user's ID
+ * Helper function used by streak operations
+ */
+export const getCurrentUserId = async (): Promise<string> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User not authenticated');
+  }
+  
+  return user.id;
+};
+
+// ====================================
+// Existing User Functions
+// ====================================
 
 /**
  * Get the current user's name
@@ -97,7 +175,6 @@ export const getUserSettings = async (): Promise<UserSettings> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // For now, use localStorage/AsyncStorage as fallback until user_settings table is created
     const defaults: UserSettings = {
       notificationsEnabled: true,
       darkModeEnabled: false,
@@ -105,7 +182,6 @@ export const getUserSettings = async (): Promise<UserSettings> => {
       reminderEnabled: true,
     };
 
-    // Try to get from database first
     const { data, error } = await supabase
       .from('user_settings')
       .select('*')
@@ -113,12 +189,10 @@ export const getUserSettings = async (): Promise<UserSettings> => {
       .single();
 
     if (error) {
-      // If no settings exist for this user, return defaults
       console.log('No settings found for user, using defaults:', error.message);
       return defaults;
     }
 
-    // Map database columns to interface
     if (data) {
       return {
         notificationsEnabled: data.notifications_enabled ?? defaults.notificationsEnabled,
@@ -131,7 +205,6 @@ export const getUserSettings = async (): Promise<UserSettings> => {
     return defaults;
   } catch (error) {
     console.error('Unexpected error loading settings:', error);
-    // Return defaults if anything fails
     return {
       notificationsEnabled: true,
       darkModeEnabled: false,
@@ -149,7 +222,6 @@ export const updateUserSettings = async (settings: UserSettings): Promise<UserSe
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Try to update in database
     const { data, error } = await supabase
       .from('user_settings')
       .upsert({
@@ -165,11 +237,9 @@ export const updateUserSettings = async (settings: UserSettings): Promise<UserSe
 
     if (error) {
       console.error('Failed to save settings to database:', error.message);
-      // Return the settings anyway so UI updates
       return settings;
     }
 
-    // Map the database response back to our interface
     if (data) {
       return {
         notificationsEnabled: data.notifications_enabled,
@@ -182,31 +252,7 @@ export const updateUserSettings = async (settings: UserSettings): Promise<UserSe
     return settings;
   } catch (error) {
     console.error('Unexpected error updating settings:', error);
-    // Return the settings anyway so UI doesn't break
     return settings;
-  }
-};
-
-// Helper function to create default settings
-const createDefaultSettings = async (userId: string, settings: UserSettings) => {
-  try {
-    const { error } = await supabase
-      .from('user_settings')
-      .insert({
-        user_id: userId,
-        notifications_enabled: settings.notificationsEnabled,
-        dark_mode_enabled: settings.darkModeEnabled,
-        preferred_journal_time: settings.preferredJournalTime,
-        reminder_enabled: settings.reminderEnabled,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-
-    if (error) {
-      console.error('Could not create default settings:', error.message);
-    }
-  } catch (error) {
-    console.error('Error creating default settings:', error);
   }
 };
 
@@ -242,10 +288,48 @@ export const getUserProfile = async (): Promise<Profile | null> => {
   return data;
 };
 
+export const updateMonthlyGoal = async (goal: number): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      monthly_goal: goal,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
+
+  if (error) throw error;
+};
+
+export const updatePhoneNumber = async (phoneNumber: string): Promise<void> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({ 
+      phone_number: phoneNumber,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', user.id);
+
+  if (error) throw error;
+};
+
+// ====================================
+// DEPRECATED: Individual Streak Updates
+// These are kept for backward compatibility but should be replaced with updateUserStreaks()
+// ====================================
+
 /**
+ * @deprecated Use updateUserStreaks() for atomic updates
  * Update the user's current writing streak
  */
 export const updateWritingStreak = async (streak: number): Promise<void> => {
+  console.warn('⚠️ updateWritingStreak is deprecated. Use updateUserStreaks() instead.');
+  
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -270,9 +354,12 @@ export const updateWritingStreak = async (streak: number): Promise<void> => {
 };
 
 /**
+ * @deprecated Use updateUserStreaks() for atomic updates
  * Update the user's best writing streak (all-time record)
  */
 export const updateBestStreak = async (streak: number): Promise<void> => {
+  console.warn('⚠️ updateBestStreak is deprecated. Use updateUserStreaks() instead.');
+  
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -296,7 +383,13 @@ export const updateBestStreak = async (streak: number): Promise<void> => {
   console.log('🏆 updateBestStreak: Best streak successfully updated to:', streak);
 };
 
+/**
+ * @deprecated Use updateUserStreaks() for atomic updates
+ * Update the last entry date
+ */
 export const updateLastEntryDate = async (date: string): Promise<void> => {
+  console.warn('⚠️ updateLastEntryDate is deprecated. Use updateUserStreaks() instead.');
+  
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
@@ -304,36 +397,6 @@ export const updateLastEntryDate = async (date: string): Promise<void> => {
     .from('profiles')
     .update({ 
       last_entry_date: date,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', user.id);
-
-  if (error) throw error;
-};
-
-export const updateMonthlyGoal = async (goal: number): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ 
-      monthly_goal: goal,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', user.id);
-
-  if (error) throw error;
-};
-
-export const updatePhoneNumber = async (phoneNumber: string): Promise<void> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  const { error } = await supabase
-    .from('profiles')
-    .update({ 
-      phone_number: phoneNumber,
       updated_at: new Date().toISOString()
     })
     .eq('id', user.id);

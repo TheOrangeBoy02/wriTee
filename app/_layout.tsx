@@ -1,10 +1,12 @@
-// app/_layout.tsx - Updated with better route handling
+// app/_layout.tsx
 
 import { useEffect, useState } from 'react';
 import { Stack, SplashScreen, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { View, Text } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -19,11 +21,9 @@ import {
   PlayfairDisplay_700Bold,
   PlayfairDisplay_600SemiBold
 } from '@expo-google-fonts/playfair-display';
+import { StreakProvider } from '@/context/StreakContext';
 
-// Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
-
-// Initialize WebBrowser for OAuth
 WebBrowser.maybeCompleteAuthSession();
 
 export default function RootLayout() {
@@ -45,7 +45,6 @@ export default function RootLayout() {
     'FleurDeLeah_400Regular': require('@/assets/fonts/FleurDeLeah-Regular.ttf'),
   });
 
-  // Check if it's first time launch
   useEffect(() => {
     const checkFirstTime = async () => {
       try {
@@ -56,28 +55,20 @@ export default function RootLayout() {
         setIsFirstTime(true);
       }
     };
-
     checkFirstTime();
   }, []);
 
-  // Listen to auth state changes
   useEffect(() => {
     const { unsubscribe } = authService.onAuthStateChange((user) => {
       console.log('Auth state changed:', !!user);
       setIsAuthenticated(!!user);
       setIsInitializing(false);
     });
-
-    return () => {
-      unsubscribe();
-    };
+    return unsubscribe;
   }, []);
 
-  // Handle navigation based on app state
   useEffect(() => {
-    if (isFirstTime === null || isAuthenticated === null || isInitializing) {
-      return; // Still loading
-    }
+    if (isFirstTime === null || isAuthenticated === null || isInitializing) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
@@ -85,40 +76,31 @@ export default function RootLayout() {
     const isOnLoginScreen = segments[1] === 'login';
     const isOnSignupScreen = segments[1] === 'signup';
 
-    console.log('Navigation check:', { 
-      segments, 
-      isFirstTime, 
-      isAuthenticated, 
+    console.log('Navigation check:', {
+      segments,
+      isFirstTime,
+      isAuthenticated,
       inAuthGroup,
       inTabsGroup,
-      currentScreen: segments[1]
+      currentScreen: segments[1],
     });
 
-    // If user is authenticated, go to tabs
-    if (isAuthenticated) {
-      if (!inTabsGroup) {
-        console.log('Navigating authenticated user to tabs...');
-        // Try different navigation approaches
-        try {
-          router.replace('/(tabs)');
-        } catch (error) {
-          console.error('Navigation error:', error);
-          // Fallback navigation
-          router.replace('/');
-        }
+    if (isAuthenticated && !inTabsGroup) {
+      try {
+        router.replace('/(tabs)');
+      } catch (error) {
+        console.error('Navigation error:', error);
+        router.replace('/');
       }
       return;
     }
 
-    // If user is not authenticated
     if (!isAuthenticated) {
       if (isFirstTime) {
-        // First time users should see welcome screen first
         if (!isOnWelcomeScreen && !isOnLoginScreen && !isOnSignupScreen) {
           router.replace('/(auth)/WelcomeScreen');
         }
       } else {
-        // Returning users go directly to login, BUT allow signup screen
         if (!isOnLoginScreen && !isOnSignupScreen) {
           router.replace('/(auth)/login');
         }
@@ -127,28 +109,23 @@ export default function RootLayout() {
   }, [isFirstTime, isAuthenticated, isInitializing, segments, router]);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
+    if (fontsLoaded || fontError) SplashScreen.hideAsync();
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
-
-  // Show loading screen while checking app state
-  if (isFirstTime === null || isAuthenticated === null || isInitializing) {
-    return null;
-  }
+  // Safeguard: render null while initializing or fonts are loading
+  if (!fontsLoaded && !fontError) return null;
+  if (isFirstTime === null || isAuthenticated === null || isInitializing) return null;
 
   return (
-    <ErrorBoundary>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" options={{ title: 'Page Not Found' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ErrorBoundary>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ErrorBoundary>
+        <StreakProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            {/* Ensure every screen returns only <View> or <Text>, not raw strings */}
+          </Stack>
+          <StatusBar style="auto" />
+        </StreakProvider>
+      </ErrorBoundary>
+    </GestureHandlerRootView>
   );
 }

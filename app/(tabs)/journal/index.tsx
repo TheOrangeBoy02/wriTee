@@ -1,25 +1,23 @@
+//app/(tabs)/journal/index.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Search, Calendar, PenLine, RefreshCw, X, Bold } from 'lucide-react-native';
+import { Plus, PinIcon ,Search, PenLine, RefreshCw, X } from 'lucide-react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
 import { getJournalEntries, getAllTags, getJournalEntriesByTags } from '@/services/journal';
 import { JournalEntry } from '@/types';
 
+// Dummy handlers for now (replace with your logic)
+const handleDeleteEntry = (id: string) => console.log('🗑 Deleted entry:', id);
+const handlePinEntry = (id: string) => console.log('📌 Pinned entry:', id);
+
 export default function JournalScreen() {
-  // Custom empty state for search
-  const renderSearchEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Search size={64} color={Colors.neutral.light} />
-      <Text style={styles.emptyTitle}>Searched word not found</Text>
-      <Text style={styles.emptyText}>
-        Try a different word or check your spelling.
-      </Text>
-    </View>
-  );
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -34,7 +32,6 @@ export default function JournalScreen() {
     loadTags();
   }, []);
 
-  // Reload entries every time screen is focused
   useFocusEffect(
     React.useCallback(() => {
       loadEntries();
@@ -44,7 +41,7 @@ export default function JournalScreen() {
 
   useEffect(() => {
     loadFilteredEntries();
-  }, [selectedTags]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedTags]);
 
   const loadEntries = async () => {
     setIsLoading(true);
@@ -110,16 +107,14 @@ export default function JournalScreen() {
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
+    setSelectedTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
   };
 
-  const clearAllFilters = () => {
-    setSelectedTags([]);
-  };
+  const clearAllFilters = () => setSelectedTags([]);
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
@@ -134,9 +129,71 @@ export default function JournalScreen() {
     </View>
   );
 
+  const SwipeableItem = ({ item }: { item: JournalEntry }) => {
+  const translateX = useSharedValue(0);
+  const SWIPE_TRIGGER = 80;
+  const MAX_SWIPE = 100;
+  
+
+  // Updated gesture with horizontal dominance detection
+  const gesture = Gesture.Pan()
+    .onUpdate((event) => {
+      // Only react if horizontal movement is dominant
+      if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
+        translateX.value = Math.min(Math.max(event.translationX, -MAX_SWIPE), MAX_SWIPE);
+      
+      }
+    })
+    .onEnd(() => {
+      
+      if (translateX.value > SWIPE_TRIGGER) {
+        runOnJS(handlePinEntry)(item.id);
+      } else if (translateX.value < -SWIPE_TRIGGER) {
+        runOnJS(handleDeleteEntry)(item.id);
+      }
+      translateX.value = withTiming(0, { duration: 200 });
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  return (
+    <View style={{ marginBottom: 2 }}>
+      {/* Background actions (Pin + Delete) */}
+      <View style={styles.swipeActions}>
+        <View style={styles.pinAction}>
+          <PinIcon />
+          <Text style={styles.actionText}>Pin</Text>
+        </View>
+
+        <View style={styles.deleteAction}>
+          <Text style={styles.actionText}>🗑 Delete</Text>
+        </View>
+      </View>
+
+      {/* Foreground journal card */}
+      <GestureDetector gesture={gesture}>
+        <Animated.View style={[animatedStyle]}>
+          <TouchableOpacity onPress={() => handleEntryPress(item.id)}>
+            <JournalEntryItem
+              entry={item}
+              onPress={() => handleEntryPress(item.id)}
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      </GestureDetector>
+    </View>
+    
+  );
+};
+
+   const translateX = useSharedValue(0);
+  const SWIPE_TRIGGER = 80;
+  const MAX_SWIPE = 100;
+
   return (
     <View style={styles.container}>
-      {/* Custom Header Row */}
       <View style={styles.headerRow}>
         <Text style={styles.headerTitle}>Journal</Text>
         <View style={styles.actionsContainer}>
@@ -146,7 +203,7 @@ export default function JournalScreen() {
           >
             <Search size={20} color={showSearch ? Colors.primary.main : Colors.text.medium} />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.refreshButton}
             onPress={handleRefresh}
             disabled={isRefreshing}
@@ -160,100 +217,22 @@ export default function JournalScreen() {
         </View>
       </View>
 
-      {/* Search Bar */}
-      {showSearch && (
-        <View style={styles.searchBarContainer}>
-          <TextInput
-            style={styles.searchInput}
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-            placeholder="Search journal entries..."
-            placeholderTextColor={Colors.text.medium}
-            autoFocus
-          />
-          {searchTerm.length > 0 && (
-            <TouchableOpacity style={styles.clearSearchButton} onPress={() => setSearchTerm('')}>
-              <X size={18} color={Colors.text.medium} />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Tag Filter Section */}
-      {availableTags.length > 0 && (
-        <View style={styles.tagFilterContainer}>
-          <View style={styles.tagFilterHeader}>
-            <Text style={styles.tagFilterTitle}>Filter by tags:</Text>
-            {selectedTags.length > 0 && (
-              <TouchableOpacity onPress={clearAllFilters} style={styles.clearButton}>
-                <X size={16} color={Colors.text.medium} />
-                <Text style={styles.clearButtonText}>Clear</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagFilterScroll}>
-            <View style={styles.tagFilterRow}>
-              {availableTags.map((tag) => (
-                <TouchableOpacity
-                  key={tag}
-                  style={[
-                    styles.tagFilterButton,
-                    selectedTags.includes(tag) && styles.tagFilterButtonActive
-                  ]}
-                  onPress={() => toggleTag(tag)}
-                >
-                  <Text style={[
-                    styles.tagFilterButtonText,
-                    selectedTags.includes(tag) && styles.tagFilterButtonTextActive
-                  ]}>
-                    {tag}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-      )}
-
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary.main} />
         </View>
       ) : (
         <FlatList
-          data={entries
-            .slice() // copy to avoid mutating state
-            .sort((a, b) => {
-              // Sort descending by updated_at, fallback to created_at
-              const aDate = new Date(a.updated_at || a.created_at || 0).getTime();
-              const bDate = new Date(b.updated_at || b.created_at || 0).getTime();
-              return bDate - aDate;
-            })
-            .filter(e => {
-              if (!searchTerm.trim()) return true;
-              const term = searchTerm.trim().toLowerCase();
-              return (
-                e.title.toLowerCase().includes(term) ||
-                e.content.toLowerCase().includes(term)
-              );
-            })}
+          data={entries}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <JournalEntryItem
-              entry={item}
-              onPress={() => handleEntryPress(item.id)}
-            />
-          )}
+          renderItem={({ item }) => <SwipeableItem item={item} />}
           contentContainerStyle={styles.entriesList}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={searchTerm.trim() ? renderSearchEmptyState : renderEmptyState}
+          ListEmptyComponent={renderEmptyState}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
               colors={[Colors.primary.main]}
-              tintColor={Colors.primary.main}
-              progressBackgroundColor={Colors.background.light}
             />
           }
         />
@@ -437,5 +416,34 @@ const styles = StyleSheet.create({
   },
   tagFilterButtonTextActive: {
     color: '#fff',
+  },
+   swipeActions: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pinAction: {
+    backgroundColor: Colors.primary.light,
+    width: 130,
+    height: "83%",
+   
+     flexDirection: 'row',
+    marginBottom: 16,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteAction: {
+    backgroundColor: '#E57373',
+    width: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionText: {
+     color: Colors.primary.main,
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+   
   },
 });

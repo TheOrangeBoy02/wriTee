@@ -1,3 +1,5 @@
+//services/journal.ts
+
 import { JournalEntry } from '@/types';
 import { supabase } from './supabase';
 import { updateStreakAfterEntry } from '@/utils/streak';
@@ -71,10 +73,7 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
       updated_at: now
     };
 
-    // Only add tags if they exist (for backward compatibility)
-    if (entry.tags !== undefined) {
-      updateData.tags = entry.tags || [];
-    }
+  
 
     const { data, error } = await supabase
       .from('journal_entries')
@@ -119,11 +118,6 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
       created_at: now,
       updated_at: now
     };
-
-    // Only add tags if they exist (for backward compatibility)
-    if (entry.tags !== undefined) {
-      insertData.tags = entry.tags || [];
-    }
 
     const { data, error } = await supabase
       .from('journal_entries')

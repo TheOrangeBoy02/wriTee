@@ -13,8 +13,7 @@
       "bundleIdentifier": "com.writee.app"
     },
     "android": {
-      "package": "com.writee.app",
-      "versionCode": 1
+      "package": "com.writee.app"
     },
     "web": {
       "bundler": "metro",

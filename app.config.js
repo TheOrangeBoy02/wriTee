@@ -13,10 +13,12 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.writee.app"
+      bundleIdentifier: "com.writee.app",
+      buildNumber: "1.0.0"
     },
     android: {
-      package: "com.writee.app"
+      package: "com.writee.app",
+      versionCode: 6
     },
     web: {
       bundler: "metro",
@@ -37,7 +39,7 @@ export default {
       router: {},
       eas: {
         projectId: "53039e10-fc7a-4cf6-b394-8b1b70b6da8c"
-      },
+      }
     }
   }
 };

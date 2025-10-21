@@ -1,0 +1,19 @@
+# Core system paths (CRITICAL - don't remove these!)
+$env:PATH = "/usr/bin" + [IO.Path]::PathSeparator + $env:PATH
+$env:PATH = "/bin" + [IO.Path]::PathSeparator + $env:PATH
+$env:PATH = "/usr/sbin" + [IO.Path]::PathSeparator + $env:PATH
+$env:PATH = "/sbin" + [IO.Path]::PathSeparator + $env:PATH
+$env:PATH = "/usr/local/bin" + [IO.Path]::PathSeparator + $env:PATH
+$env:PATH = "/opt/homebrew/bin" + [IO.Path]::PathSeparator + $env:PATH
+
+# VS Code
+$env:PATH = "/Applications/Visual Studio Code.app/Contents/Resources/app/bin" + [IO.Path]::PathSeparator + $env:PATH
+
+# Java/OpenJDK
+$env:JAVA_HOME = "/opt/homebrew/opt/openjdk@17"
+$env:PATH = "/opt/homebrew/opt/openjdk@17/bin" + [IO.Path]::PathSeparator + $env:PATH
+
+# Android SDK
+$env:ANDROID_HOME = "/Users/badmac/Library/Android/sdk"
+$env:PATH = $env:PATH + [IO.Path]::PathSeparator + "$env:ANDROID_HOME/emulator"
+$env:PATH = $env:PATH + [IO.Path]::PathSeparator + "$env:ANDROID_HOME/platform-tools"

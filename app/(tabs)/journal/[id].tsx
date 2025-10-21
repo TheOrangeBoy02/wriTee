@@ -86,9 +86,9 @@ export default function JournalEntryScreen() {
 
   // UPDATED: handleSave with streak refresh
   const handleSave = async () => {
-    if (!title.trim()) {
-      Alert.alert('Missing Title', 'Please enter a title for your journal entry.');
-      return;
+    let entryTitle = title.trim();
+    if (!entryTitle) {
+      entryTitle = '[too lazy for title]';
     }
 
     if (!content.trim()) {
@@ -100,7 +100,7 @@ export default function JournalEntryScreen() {
     try {
       const updatedEntry = {
         id: (id === 'new' || id === '[id]') ? undefined : id,
-        title: title.trim(),
+        title: entryTitle,
         content: content.trim(),
         entry_date: (id === 'new' || id === '[id]')
           ? new Date().toISOString()

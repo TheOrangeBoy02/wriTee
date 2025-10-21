@@ -2,14 +2,18 @@ import { Tabs } from 'expo-router';
 import { Calendar, Home, Settings, StickyNote } from 'lucide-react-native';
 import { StyleSheet } from 'react-native';
 import Colors from '@/constants/Colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const tabBarStyle = [styles.tabBar, { paddingBottom: Math.max(insets.bottom, 8), height: 60 + insets.bottom }];
+
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.primary.main,
         tabBarInactiveTintColor: Colors.neutral.light,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: tabBarStyle,
         tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
       }}>

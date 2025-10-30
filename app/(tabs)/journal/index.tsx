@@ -159,22 +159,19 @@ const handleDeleteEntry = async (id: string) => {
 
   // Updated gesture with horizontal dominance detection
   const gesture = Gesture.Pan()
-    .onUpdate((event) => {
-      // Only react if horizontal movement is dominant
-      if (Math.abs(event.translationX) > Math.abs(event.translationY)) {
-        translateX.value = Math.min(Math.max(event.translationX, -MAX_SWIPE), MAX_SWIPE);
-      
-      }
-    })
-    .onEnd(() => {
-      
-      if (translateX.value > SWIPE_TRIGGER) {
-        runOnJS(handlePinEntry)(item.id);
-      } else if (translateX.value < -SWIPE_TRIGGER) {
-        runOnJS(handleDeleteEntry)(item.id);
-      }
-      translateX.value = withTiming(0, { duration: 200 });
-    });
+  .activeOffsetX([-15, 15])    // Need MORE horizontal movement (15px) to activate swipe
+  .failOffsetY([-10, 10])       // Fail quickly if vertical movement (10px) detected
+  .onUpdate((event) => {
+    translateX.value = Math.min(Math.max(event.translationX, -MAX_SWIPE), MAX_SWIPE);
+  })
+  .onEnd(() => {
+    if (translateX.value > SWIPE_TRIGGER) {
+      runOnJS(handlePinEntry)(item.id);
+    } else if (translateX.value < -SWIPE_TRIGGER) {
+      runOnJS(handleDeleteEntry)(item.id);
+    }
+    translateX.value = withTiming(0, { duration: 200 });
+  });
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

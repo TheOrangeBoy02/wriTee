@@ -18,6 +18,7 @@ export const getJournalEntries = async (page = 0, pageSize = 20): Promise<{ entr
     .from('journal_entries')
     .select('*', { count: 'exact' })
     .eq('user_id', user.id)
+    .order('pinned', { ascending: false })
     .order('entry_date', { ascending: false })
     .range(from, to);
 
@@ -237,6 +238,7 @@ export const getRecentJournalEntries = async (limit = 5): Promise<JournalEntry[]
     .from('journal_entries')
     .select('*')
     .eq('user_id', user.id)
+    .order('pinned', { ascending: false })
     .order('entry_date', { ascending: false })
     .limit(limit);
 
@@ -272,6 +274,7 @@ export const searchJournalEntries = async (query: string, page = 0, pageSize = 1
     .select('*', { count: 'exact' })
     .eq('user_id', user.id)
     .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+    .order('pinned', { ascending: false })
     .order('entry_date', { ascending: false })
     .range(from, to);
 

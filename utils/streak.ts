@@ -61,16 +61,39 @@ export const calculateStreaks = async (): Promise<{
     let currentStreak = 0;
     const mostRecentEntry = uniqueDates[uniqueDates.length - 1];
     
-    if (mostRecentEntry === today || mostRecentEntry === yesterday) {
+    // First check if the user has written today
+    if (mostRecentEntry === today) {
       currentStreak = 1;
+      let previousDate = today;
       
-      for (let i = uniqueDates.length - 1; i > 0; i--) {
-        if (isConsecutive(uniqueDates[i - 1], uniqueDates[i])) {
+      // Count consecutive days backwards
+      for (let i = uniqueDates.length - 2; i >= 0; i--) {
+        if (isConsecutive(uniqueDates[i], previousDate)) {
           currentStreak++;
+          previousDate = uniqueDates[i];
         } else {
           break;
         }
       }
+    }
+    // If not written today, check if they wrote yesterday
+    else if (mostRecentEntry === yesterday) {
+      currentStreak = 1;
+      let previousDate = yesterday;
+      
+      // Count consecutive days backwards from yesterday
+      for (let i = uniqueDates.length - 2; i >= 0; i--) {
+        if (isConsecutive(uniqueDates[i], previousDate)) {
+          currentStreak++;
+          previousDate = uniqueDates[i];
+        } else {
+          break;
+        }
+      }
+    }
+    // If neither today nor yesterday, streak is broken
+    else {
+      currentStreak = 0;
     }
 
     console.log('🔥 Calculated streaks:', { currentStreak, bestStreak });

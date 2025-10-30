@@ -106,6 +106,10 @@ export const getUsername = async (): Promise<string> => {
 /**
  * Get the user's current and best writing streaks
  */
+/**
+ * Get the user's current and best writing streaks
+ * Validates that the current streak is still active based on last_entry_date
+ */
 export const getUserStreaks = async (): Promise<{ currentStreak: number; bestStreak: number }> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -115,7 +119,7 @@ export const getUserStreaks = async (): Promise<{ currentStreak: number; bestStr
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('writing_streak, best_streak')
+      .select('writing_streak, best_streak, last_entry_date')
       .eq('id', user.id)
       .single();
 
@@ -126,10 +130,39 @@ export const getUserStreaks = async (): Promise<{ currentStreak: number; bestStr
     
     console.log('📊 getUserStreaks: Raw database result:', data);
     
-    const currentStreak = data?.writing_streak ?? 0;
+    let currentStreak = data?.writing_streak ?? 0;
     const bestStreak = data?.best_streak ?? 0;
     
+    // Validate streak freshness - streak is only valid if last entry was today or yesterday
+    if (data?.last_entry_date && currentStreak > 0) {
+      const lastEntry = new Date(data.last_entry_date + 'T00:00:00');
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+      
+      // If last entry is older than yesterday, streak is broken
+      if (lastEntry < yesterday) {
+        console.log('📊 getUserStreaks: Streak expired! Last entry:', data.last_entry_date);
+        currentStreak = 0;
+        
+        // Update database to reflect broken streak
+        // Using fire-and-forget to not block the return
+        supabase
+          .from('profiles')
+          .update({ 
+            writing_streak: 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+          .then(
+            () => console.log('📊 getUserStreaks: Reset expired streak in database'),
+            (err) => console.error('📊 getUserStreaks: Failed to reset streak:', err)
+          );}
+    }
+    
+    console.log('📊 getUserStreaks: Validated streaks:', { currentStreak, bestStreak });
     return { currentStreak, bestStreak };
+    
   } catch (error) {
     console.error('Error fetching user streaks:', error);
     return { currentStreak: 0, bestStreak: 0 };

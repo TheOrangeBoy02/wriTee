@@ -115,51 +115,54 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+        <View style={[styles.sectionContainer, { opacity: 0.5 }]}>
+          <Text style={[styles.sectionTitle, { color: Colors.text.light }]}>Preferences</Text>
           
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Bell size={20} color={Colors.text.dark} />
-              <Text style={styles.settingText}>Notifications</Text>
+              <Bell size={20} color={Colors.text.light} />
+              <Text style={[styles.settingText, { color: Colors.text.light }]}>Notifications</Text>
             </View>
             <Switch
               value={settings.notificationsEnabled}
-              onValueChange={(value) => handleToggleChange('notificationsEnabled', value)}
+              onValueChange={(value) => {}}
               trackColor={{ false: Colors.neutral.border, true: Colors.primary.light }}
-              thumbColor={settings.notificationsEnabled ? Colors.primary.main : Colors.neutral.main}
+              thumbColor={Colors.neutral.border}
+              disabled={true}
             />
           </View>
           
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <Moon size={20} color={Colors.text.dark} />
-              <Text style={styles.settingText}>Dark Mode</Text>
+              <Moon size={20} color={Colors.text.light} />
+              <Text style={[styles.settingText, { color: Colors.text.light }]}>Dark Mode</Text>
             </View>
             <Switch
               value={settings.darkModeEnabled}
-              onValueChange={(value) => handleToggleChange('darkModeEnabled', value)}
+              onValueChange={(value) => {}}
               trackColor={{ false: Colors.neutral.border, true: Colors.primary.light }}
-              thumbColor={settings.darkModeEnabled ? Colors.primary.main : Colors.neutral.main}
+              thumbColor={Colors.neutral.border}
+              disabled={true}
             />
           </View>
           
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={handleTimeSettings}
+            disabled={true}
           >
             <View style={styles.settingLeft}>
-              <Clock size={20} color={Colors.text.dark} />
-              <Text style={styles.settingText}>Journal Reminder</Text>
+              <Clock size={20} color={Colors.text.light} />
+              <Text style={[styles.settingText, { color: Colors.text.light }]}>Journal Reminder</Text>
             </View>
             <View style={styles.reminderRight}>
               <Switch
                 value={settings.reminderEnabled}
-                onValueChange={(value) => handleToggleChange('reminderEnabled', value)}
+                onValueChange={(value) => {}}
                 trackColor={{ false: Colors.neutral.border, true: Colors.primary.light }}
-                thumbColor={settings.reminderEnabled ? Colors.primary.main : Colors.neutral.main}
+                thumbColor={Colors.neutral.border}
+                disabled={true}
               />
-              <Text style={styles.timeText}>
+              <Text style={[styles.timeText, { color: Colors.text.light }]}>
                 {settings.preferredJournalTime}
               </Text>
             </View>

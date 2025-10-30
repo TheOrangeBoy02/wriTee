@@ -128,38 +128,49 @@ export default function CalendarScreen() {
     },
   }), [markedDates, selectedDate]);
 
-  const renderStreakVisualization = () => {
-    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    
-    return (
-      <View style={styles.streakContainer}>
-        <View style={styles.streakHeader}>
-          <Flame size={24} color={Colors.primary.main} />
-          <Text style={styles.streakNumber}>{currentStreak}</Text>
-        </View>
+
+const renderStreakVisualization = () => {
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <View style={styles.streakContainer}>
+      <View style={styles.streakHeader}>
+        <Flame size={24} color={Colors.primary.main} />
+        <Text style={styles.streakNumber}>{currentStreak}</Text>
+      </View>
+
+      <View style={styles.streakDays}>
+        {daysOfWeek.map((dayName, index) => {
+          // Get the current week's Sunday
+          const today = new Date();
+          const sunday = new Date(today);
+          sunday.setDate(today.getDate() - today.getDay());
+
+          // Calculate each day starting from Sunday
+          const date = new Date(sunday);
+          date.setDate(sunday.getDate() + index);
+
+          const dateStr = getLocalDateString(date);
         
-        <View style={styles.streakDays}>
-          {Array.from({ length: 7 }, (_, index) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (6 - index));
-            const dateStr = getLocalDateString(date);
-            const dayName = daysOfWeek[date.getDay()];
-            const hasEntry = streakDates.includes(dateStr);
-            
-            return (
-              <View key={dateStr} style={styles.streakDay}>
-                <Text style={styles.streakDayLabel}>{dayName}</Text>
-                <View style={[
+          const hasEntry = markedDates[dateStr]?.marked;
+
+          return (
+            <View key={dayName} style={styles.streakDay}>
+              <Text style={styles.streakDayLabel}>{dayName}</Text>
+              <View
+                style={[
                   styles.streakDot,
                   hasEntry && styles.streakDotFilled
-                ]} />
-              </View>
-            );
-          })}
-        </View>
+                ]}
+              />
+            </View>
+          );
+        })}
       </View>
-    );
-  };
+    </View>
+  );
+};
+
 
   return (
     <View style={styles.container}>
@@ -174,7 +185,7 @@ export default function CalendarScreen() {
           {renderStreakVisualization()}
           
           <RNCalendar
-            onDayPress={handleDayPress}
+            // onDayPress={handleDayPress}
             markedDates={calendarMarkedDates}
             theme={{
               calendarBackground: Colors.background.main,
@@ -193,6 +204,7 @@ export default function CalendarScreen() {
               textMonthFontFamily: 'Inter-SemiBold',
               textDayHeaderFontFamily: 'Inter-Medium',
               textDayFontSize: 16,
+        
               textMonthFontSize: 16,
               textDayHeaderFontSize: 14,
             }}
@@ -259,10 +271,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
     elevation: 2,
   },
   streakHeader: {

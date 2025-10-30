@@ -1,7 +1,9 @@
 // app/(tabs)/journal/[id].tsx
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Image, GestureResponderEvent } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
+import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
@@ -22,9 +24,12 @@ export default function JournalEntryScreen() {
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [currentFormat, setCurrentFormat] = useState({ bold: false, italic: false, underline: false });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   const contentInputRef = useRef<TextInput>(null);
   const router = useRouter();
-  const { refreshStreaks } = useStreaks(); // NEW: to refresh streaks after saving
+  const { refreshStreaks } = useStreaks();
 
   // Double-tap detection
   const lastTapRef = useRef<number | null>(null);
@@ -74,6 +79,27 @@ export default function JournalEntryScreen() {
     }
   }, [id]);
 
+  const navigation = useNavigation();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+        if (!hasUnsavedChanges) {
+          return;
+        }
+
+        // Prevent default navigation
+        e.preventDefault();
+
+        // Show confirmation dialog
+        setShowUnsavedDialog(true);
+        setPendingNavigation(() => () => navigation.dispatch(e.data.action));
+      });
+
+      return unsubscribe;
+    }, [navigation, hasUnsavedChanges])
+  );
+
   const loadPrompt = async () => {
     try {
       const prompt = await getRandomPrompt();
@@ -115,6 +141,7 @@ export default function JournalEntryScreen() {
       await refreshStreaks();
 
       setIsEditing(false);
+      setHasUnsavedChanges(false);
 
       if (id === 'new' || id === '[id]') {
         router.back();
@@ -202,7 +229,14 @@ export default function JournalEntryScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton}           onPress={() => {
+            if (hasUnsavedChanges) {
+              setShowUnsavedDialog(true);
+              setPendingNavigation(() => router.back);
+            } else {
+              router.back();
+            }
+          }}>
           <ArrowLeft size={24} color={Colors.text.dark} />
         </TouchableOpacity>
 
@@ -244,7 +278,10 @@ export default function JournalEntryScreen() {
           <TextInput
             style={styles.titleInput}
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(newTitle) => {
+              setTitle(newTitle);
+              setHasUnsavedChanges(true);
+            }}
             placeholder="Journal Title"
             placeholderTextColor={Colors.text.medium}
             maxLength={100}
@@ -260,7 +297,10 @@ export default function JournalEntryScreen() {
             ref={contentInputRef}
             style={styles.contentInput}
             value={content}
-            onChangeText={setContent}
+            onChangeText={(newContent) => {
+              setContent(newContent);
+              setHasUnsavedChanges(true);
+            }}
             onSelectionChange={(event) => setSelection(event.nativeEvent.selection)}
             placeholder="Start writing your thoughts here..."
             placeholderTextColor={Colors.text.medium}
@@ -286,7 +326,7 @@ export default function JournalEntryScreen() {
 
       {!isViewMode && (
         <View style={styles.bottomToolbar}>
-          <View style={styles.formatButtons}>
+          {/* <View style={styles.formatButtons}>
             <TouchableOpacity style={[styles.formatButton, currentFormat.bold && styles.formatButtonActive]} onPress={() => formatText('bold')}>
               <Bold size={20} color={currentFormat.bold ? Colors.primary.main : Colors.text.dark} />
             </TouchableOpacity>
@@ -296,13 +336,37 @@ export default function JournalEntryScreen() {
             <TouchableOpacity style={[styles.formatButton, currentFormat.underline && styles.formatButtonActive]} onPress={() => formatText('underline')}>
               <Underline size={20} color={currentFormat.underline ? Colors.primary.main : Colors.text.dark} />
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
             {isSaving ? <ActivityIndicator size="small" color="white" /> : <Text style={styles.saveButtonText}>Save</Text>}
           </TouchableOpacity>
         </View>
       )}
+      {/* Unsaved Changes Dialog */}
+      <UnsavedChangesDialog
+        visible={showUnsavedDialog}
+        onSave={async () => {
+          setShowUnsavedDialog(false);
+          await handleSave();
+          if (pendingNavigation) {
+            pendingNavigation();
+            setPendingNavigation(null);
+          }
+        }}
+        onDiscard={() => {
+          setShowUnsavedDialog(false);
+          setHasUnsavedChanges(false);
+          if (pendingNavigation) {
+            pendingNavigation();
+            setPendingNavigation(null);
+          }
+        }}
+        onCancel={() => {
+          setShowUnsavedDialog(false);
+          setPendingNavigation(null);
+        }}
+      />
     </KeyboardAvoidingView>
   );
 }

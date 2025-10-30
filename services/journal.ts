@@ -352,6 +352,7 @@ export const getJournalEntriesByTags = async (tags: string[], page = 0, pageSize
     });
 
     const { data, error, count } = await query
+      .order('pinned', { ascending: false })
       .order('entry_date', { ascending: false })
       .range(from, to);
 
@@ -375,4 +376,37 @@ export const getJournalEntriesByTags = async (tags: string[], page = 0, pageSize
     console.error('Error loading filtered entries:', error);
     return getJournalEntries(page, pageSize);
   }
+};
+
+/**
+ * Toggle pin status of a journal entry
+ */
+export const togglePinJournalEntry = async (id: string): Promise<JournalEntry> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  // First, get the current pin status
+  const { data: currentEntry, error: getError } = await supabase
+    .from('journal_entries')
+    .select('pinned')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (getError) throw getError;
+  if (!currentEntry) throw new Error('Entry not found');
+
+  // Toggle the pin status
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .update({ pinned: !currentEntry.pinned })
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!data) throw new Error('Entry not found');
+
+  return data;
 };

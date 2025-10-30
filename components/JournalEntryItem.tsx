@@ -1,6 +1,10 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+// components/JournalEntryItem.tsx
+
+import { View, Text, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import Colors from '@/constants/Colors';
 import { JournalEntry } from '@/types';
+
+import { PinIcon } from 'lucide-react-native';
 
 type JournalEntryItemProps = {
   entry: JournalEntry;
@@ -38,13 +42,23 @@ export default function JournalEntryItem({ entry, onPress }: JournalEntryItemPro
     : entry.content;
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
-      <View style={styles.dateContainer}>
-        <Text style={styles.date}>{formattedDate}</Text>
+    <TouchableWithoutFeedback onPress={onPress}>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <View style={styles.dateContainer}>
+            <Text style={styles.date}>{formattedDate}</Text>
+            {entry.pinned && (
+              <View style={styles.pinnedContainer}>
+                <PinIcon size={12} color={Colors.primary.main} />
+                <Text style={styles.pinnedText}>Pinned</Text>
+              </View>
+            )}
+          </View>
+        </View>
+        <Text style={styles.title}>{entry.title}</Text>
+        <Text style={styles.excerpt}>{excerpt}</Text>
       </View>
-      <Text style={styles.title}>{entry.title}</Text>
-      <Text style={styles.excerpt}>{excerpt}</Text>
-    </TouchableOpacity>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -57,15 +71,35 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: Colors.primary.main,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   dateContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 12,
   },
   date: {
     fontFamily: 'Inter-Bold',
     fontSize: 14,
     color: Colors.text.medium,
+  },
+  pinnedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.primary.light,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  pinnedText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: Colors.primary.main,
   },
   title: {
     fontFamily: 'Playfair-SemiBold',

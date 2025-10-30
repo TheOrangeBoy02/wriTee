@@ -2,20 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, PinIcon ,Search, PenLine, RefreshCw, X } from 'lucide-react-native';
+import { Plus, PinIcon ,Search, PenLine, RefreshCw, X, TrashIcon } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
-import { getJournalEntries, getAllTags, getJournalEntriesByTags } from '@/services/journal';
+import { getJournalEntries, getAllTags, getJournalEntriesByTags, deleteJournalEntry, togglePinJournalEntry } from '@/services/journal';
 import { JournalEntry } from '@/types';
 
-// Dummy handlers for now (replace with your logic)
-const handleDeleteEntry = (id: string) => console.log('🗑 Deleted entry:', id);
-const handlePinEntry = (id: string) => console.log('📌 Pinned entry:', id);
+
+
 
 export default function JournalScreen() {
   const [showSearch, setShowSearch] = useState(false);
@@ -26,6 +25,29 @@ export default function JournalScreen() {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const router = useRouter();
+
+const handlePinEntry = async (id: string) => {
+  try {
+    await togglePinJournalEntry(id);
+    // Refresh the entries list after pinning
+    loadEntries();
+  } catch (error) {
+    console.error('Error pinning entry:', error);
+    // TODO: Show error toast
+  }
+};
+
+
+const handleDeleteEntry = async (id: string) => {
+    try {
+      await deleteJournalEntry(id);
+      // Refresh the entries list after deletion
+      await loadFilteredEntries(); // Use loadFilteredEntries to respect current filters
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      // TODO: Show error toast
+    }
+  };
 
   useEffect(() => {
     loadEntries();
@@ -162,27 +184,29 @@ export default function JournalScreen() {
     <View style={{ marginBottom: 2 }}>
       {/* Background actions (Pin + Delete) */}
       <View style={styles.swipeActions}>
-        <View style={styles.pinAction}>
-          <PinIcon />
-          <Text style={styles.actionText}>Pin</Text>
+        <View style={[styles.pinAction, item.pinned && styles.unpinAction]}>
+          <PinIcon color={item.pinned ? Colors.primary.dark : Colors.primary.main} />
+          <Text style={[styles.actionText, item.pinned && styles.unpinText]}>
+            {item.pinned ? 'Unpin' : 'Pin'}
+          </Text>
         </View>
 
         <View style={styles.deleteAction}>
-          <Text style={styles.actionText}>🗑 Delete</Text>
+          <TrashIcon color="#fff" />
+          <Text style={styles.deleteText}>Delete</Text>
         </View>
       </View>
 
       {/* Foreground journal card */}
       <GestureDetector gesture={gesture}>
         <Animated.View style={[animatedStyle]}>
-          <TouchableOpacity onPress={() => handleEntryPress(item.id)}>
-            <JournalEntryItem
-              entry={item}
-              onPress={() => handleEntryPress(item.id)}
-            />
-          </TouchableOpacity>
+          <JournalEntryItem
+            entry={item}
+            onPress={() => handleEntryPress(item.id)}
+          />
         </Animated.View>
       </GestureDetector>
+
     </View>
     
   );
@@ -426,24 +450,39 @@ const styles = StyleSheet.create({
   pinAction: {
     backgroundColor: Colors.primary.light,
     width: 130,
-    height: "83%",
-   
-     flexDirection: 'row',
-    marginBottom: 16,
+    height: "89%",
+    marginBottom: 8,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 4,
+  },
+  unpinAction: {
+    backgroundColor: Colors.background.light,
+    borderWidth: 1,
+    borderColor: Colors.primary.main,
   },
   deleteAction: {
     backgroundColor: '#E57373',
-    width: 80,
+    width: 130,
+    height: "89%",
+    marginBottom: 8,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 4,
   },
   actionText: {
-     color: Colors.primary.main,
+    color: Colors.primary.main,
     fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
-   
+    fontSize: 14,
+  },
+  unpinText: {
+    color: Colors.primary.dark,
+  },
+  deleteText: {
+    color: '#fff',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
   },
 });

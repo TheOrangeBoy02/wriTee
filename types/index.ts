@@ -37,6 +37,7 @@ export interface JournalEntry {
   created_at: string;
   updated_at: string;
   entry_date: string;
+  pinned: boolean;
 }
 
 // User settings type

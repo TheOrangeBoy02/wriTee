@@ -209,16 +209,19 @@ export default function SettingsScreen() {
             />
           </View>
 
-          <View style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}>
+          <View style={[styles.settingItem, { borderBottomColor: colors.neutral.border, opacity: 0.5 }]}>
             <View style={styles.settingLeft}>
-              <Moon size={20} color={colors.text.dark} />
-              <Text style={[styles.settingText, { color: colors.text.dark }]}>Dark Mode</Text>
+              <Moon size={20} color={colors.text.light} />
+              <View>
+                <Text style={[styles.settingText, { color: colors.text.light }]}>Dark Mode</Text>
+                <Text style={[styles.helperText, { color: colors.text.light }]}>Coming soon</Text>
+              </View>
             </View>
             <Switch
-              value={settings.darkModeEnabled}
-              onValueChange={(value) => handleToggleChange('darkModeEnabled', value)}
+              value={false}
+              disabled={true}
               trackColor={{ false: colors.neutral.border, true: colors.primary.light }}
-              thumbColor={settings.darkModeEnabled ? colors.primary.main : '#f4f3f4'}
+              thumbColor="#f4f3f4"
               ios_backgroundColor={colors.neutral.border}
             />
           </View>

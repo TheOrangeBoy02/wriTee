@@ -1,6 +1,6 @@
 //app/(tabs)/journal/index.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -101,6 +101,23 @@ const handleDeleteEntry = async (id: string) => {
       }
     }
   };
+
+  // Filter entries based on search term
+  const filteredEntries = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return entries;
+    }
+
+    const lowerSearchTerm = searchTerm.toLowerCase().trim();
+    return entries.filter(entry => {
+      // Search in title
+      const titleMatch = entry.title?.toLowerCase().includes(lowerSearchTerm);
+      // Search in content
+      const contentMatch = entry.content?.toLowerCase().includes(lowerSearchTerm);
+
+      return titleMatch || contentMatch;
+    });
+  }, [entries, searchTerm]);
 
   const handleNewEntry = () => {
     router.push({
@@ -209,10 +226,6 @@ const handleDeleteEntry = async (id: string) => {
   );
 };
 
-   const translateX = useSharedValue(0);
-  const SWIPE_TRIGGER = 80;
-  const MAX_SWIPE = 100;
-
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -238,13 +251,35 @@ const handleDeleteEntry = async (id: string) => {
         </View>
       </View>
 
+      {showSearch && (
+        <View style={styles.searchBarContainer}>
+          <Search size={18} color={Colors.text.light} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search entries..."
+            placeholderTextColor={Colors.text.light}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            autoFocus={true}
+          />
+          {searchTerm.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearSearchButton}
+              onPress={() => setSearchTerm('')}
+            >
+              <X size={18} color={Colors.text.medium} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary.main} />
         </View>
       ) : (
         <FlatList
-          data={entries}
+          data={filteredEntries}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <SwipeableItem item={item} />}
           contentContainerStyle={styles.entriesList}
@@ -272,11 +307,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.background.light,
     marginHorizontal: 24,
-    marginBottom: 8,
-    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 16,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    height: 40,
+    paddingVertical: 12,
+    gap: 12,
   },
   searchInput: {
     flex: 1,
@@ -284,7 +320,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.text.dark,
     padding: 0,
-   
   },
   clearSearchButton: {
     padding: 4,

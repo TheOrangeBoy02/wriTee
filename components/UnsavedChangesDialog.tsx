@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
   cancelText: {
     color: 'red',
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: '400',
   } as any,
   discardText: {
     color: 'black',
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: '400',
   } as any,
 });

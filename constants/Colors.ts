@@ -35,7 +35,7 @@ const Colors = {
     dark: '#1A102B', // Slightly deeper for dark mode
   },
   neutral: {
-    light: '#E0E0E0',
+    light: '#b8b8b8ff',
     main: '#B39DDB', // Muted purple for borders
     dark: '#6C0BA9',
     border: '#E9D6FF', // Light purple border
@@ -45,6 +45,9 @@ const Colors = {
     medium: '#6C0BA9', // Muted purple
     light: '#B39DDB', // Light purple
   },
+  fade: {
+    main: '#9f9f9fff',
+  }
 };
 
 export default Colors;

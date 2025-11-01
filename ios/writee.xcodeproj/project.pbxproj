@@ -8,28 +8,28 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		336F2658179D285507F95137 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ACACE0DB87ABF5E607218EAF /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		44A79C2528D3126C1AA5C0C5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E089C525D07DCD01B6F02BC6 /* PrivacyInfo.xcprivacy */; };
-		689042F62C6F0D7224EE288F /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9653D63784898B8B896F7B54 /* ExpoModulesProvider.swift */; };
-		7D4B2F84BCDF8FCD33E187F9 /* libPods-writee.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F64DCD96ACCB680F5E1FA772 /* libPods-writee.a */; };
+		8618814DB8D95B5F7DA254B2 /* libPods-writee.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 00D995103C94F5244832CD5C /* libPods-writee.a */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		D76D38B62004A3A97D08C9A5 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = F368C56103E45DE532EF73E5 /* ExpoModulesProvider.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		00D995103C94F5244832CD5C /* libPods-writee.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-writee.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07F961A680F5B00A75B9A /* writee.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = writee.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = writee/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = writee/Info.plist; sourceTree = "<group>"; };
-		5C8404D7328438E48FBC4650 /* Pods-writee.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-writee.debug.xcconfig"; path = "Target Support Files/Pods-writee/Pods-writee.debug.xcconfig"; sourceTree = "<group>"; };
-		7D810004842B222E0669CCA6 /* Pods-writee.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-writee.release.xcconfig"; path = "Target Support Files/Pods-writee/Pods-writee.release.xcconfig"; sourceTree = "<group>"; };
-		9653D63784898B8B896F7B54 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-writee/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		1E8597C338B7089148179C1C /* Pods-writee.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-writee.debug.xcconfig"; path = "Target Support Files/Pods-writee/Pods-writee.debug.xcconfig"; sourceTree = "<group>"; };
+		754F1351E1584D7FB16AF676 /* Pods-writee.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-writee.release.xcconfig"; path = "Target Support Files/Pods-writee/Pods-writee.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = writee/SplashScreen.storyboard; sourceTree = "<group>"; };
+		ACACE0DB87ABF5E607218EAF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = writee/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		E089C525D07DCD01B6F02BC6 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = writee/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = writee/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* writee-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "writee-Bridging-Header.h"; path = "writee/writee-Bridging-Header.h"; sourceTree = "<group>"; };
-		F64DCD96ACCB680F5E1FA772 /* libPods-writee.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-writee.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F368C56103E45DE532EF73E5 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-writee/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,21 +37,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7D4B2F84BCDF8FCD33E187F9 /* libPods-writee.a in Frameworks */,
+				8618814DB8D95B5F7DA254B2 /* libPods-writee.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		03B506EA6964137FF547E9D5 /* writee */ = {
-			isa = PBXGroup;
-			children = (
-				9653D63784898B8B896F7B54 /* ExpoModulesProvider.swift */,
-			);
-			name = writee;
-			sourceTree = "<group>";
-		};
 		13B07FAE1A68108700A75B9A /* writee */ = {
 			isa = PBXGroup;
 			children = (
@@ -61,7 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				E089C525D07DCD01B6F02BC6 /* PrivacyInfo.xcprivacy */,
+				ACACE0DB87ABF5E607218EAF /* PrivacyInfo.xcprivacy */,
 			);
 			name = writee;
 			sourceTree = "<group>";
@@ -70,9 +62,17 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				F64DCD96ACCB680F5E1FA772 /* libPods-writee.a */,
+				00D995103C94F5244832CD5C /* libPods-writee.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		6046F9E2E74714FA5CE95A66 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				F1DC8DC81767CD5398D7DBF6 /* writee */,
+			);
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -89,8 +89,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				AF30C0E2B7AD6D725C615C9B /* Pods */,
-				D10014C941EBE306479889C6 /* ExpoModulesProviders */,
+				8DB2EDA872F1CF2A103CEB02 /* Pods */,
+				6046F9E2E74714FA5CE95A66 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -105,11 +105,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AF30C0E2B7AD6D725C615C9B /* Pods */ = {
+		8DB2EDA872F1CF2A103CEB02 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				5C8404D7328438E48FBC4650 /* Pods-writee.debug.xcconfig */,
-				7D810004842B222E0669CCA6 /* Pods-writee.release.xcconfig */,
+				1E8597C338B7089148179C1C /* Pods-writee.debug.xcconfig */,
+				754F1351E1584D7FB16AF676 /* Pods-writee.release.xcconfig */,
 			);
 			name = Pods;
 			path = Pods;
@@ -124,12 +124,12 @@
 			path = writee/Supporting;
 			sourceTree = "<group>";
 		};
-		D10014C941EBE306479889C6 /* ExpoModulesProviders */ = {
+		F1DC8DC81767CD5398D7DBF6 /* writee */ = {
 			isa = PBXGroup;
 			children = (
-				03B506EA6964137FF547E9D5 /* writee */,
+				F368C56103E45DE532EF73E5 /* ExpoModulesProvider.swift */,
 			);
-			name = ExpoModulesProviders;
+			name = writee;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "writee" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				591ABCB0C5AA60DE74925B9D /* [Expo] Configure project */,
+				89606C3D28840B03115B292C /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				DD06D065F39BF8C68D8AC287 /* [CP] Embed Pods Frameworks */,
+				9CF1C3035240962BEB4BD067 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				44A79C2528D3126C1AA5C0C5 /* PrivacyInfo.xcprivacy in Resources */,
+				336F2658179D285507F95137 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -241,30 +241,6 @@
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
-		};
-		591ABCB0C5AA60DE74925B9D /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.xcode.env",
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/writee/writee.entitlements",
-				"$(SRCROOT)/Pods/Target Support Files/Pods-writee/expo-configure-project.sh",
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(SRCROOT)/Pods/Target Support Files/Pods-writee/ExpoModulesProvider.swift",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-writee/expo-configure-project.sh\"\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -340,7 +316,31 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-writee/Pods-writee-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		DD06D065F39BF8C68D8AC287 /* [CP] Embed Pods Frameworks */ = {
+		89606C3D28840B03115B292C /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.xcode.env",
+				"$(SRCROOT)/.xcode.env.local",
+				"$(SRCROOT)/writee/writee.entitlements",
+				"$(SRCROOT)/Pods/Target Support Files/Pods-writee/expo-configure-project.sh",
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Pods/Target Support Files/Pods-writee/ExpoModulesProvider.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-writee/expo-configure-project.sh\"\n";
+		};
+		9CF1C3035240962BEB4BD067 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -370,7 +370,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				689042F62C6F0D7224EE288F /* ExpoModulesProvider.swift in Sources */,
+				D76D38B62004A3A97D08C9A5 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -379,7 +379,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5C8404D7328438E48FBC4650 /* Pods-writee.debug.xcconfig */;
+			baseConfigurationReference = 1E8597C338B7089148179C1C /* Pods-writee.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -404,7 +404,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
 				PRODUCT_BUNDLE_IDENTIFIER = com.writee.app;
-				PRODUCT_NAME = writee;
+				PRODUCT_NAME = "writee";
 				SWIFT_OBJC_BRIDGING_HEADER = "writee/writee-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -415,7 +415,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D810004842B222E0669CCA6 /* Pods-writee.release.xcconfig */;
+			baseConfigurationReference = 754F1351E1584D7FB16AF676 /* Pods-writee.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -435,7 +435,7 @@
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
 				PRODUCT_BUNDLE_IDENTIFIER = com.writee.app;
-				PRODUCT_NAME = writee;
+				PRODUCT_NAME = "writee";
 				SWIFT_OBJC_BRIDGING_HEADER = "writee/writee-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

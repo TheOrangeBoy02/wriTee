@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   date: {
     fontFamily: 'Inter-Bold',
     fontSize: 14,
-    color: Colors.text.medium,
+    color: Colors.fade.main,
   },
   pinnedContainer: {
     flexDirection: 'row',

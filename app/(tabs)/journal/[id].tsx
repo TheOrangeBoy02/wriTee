@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingVi
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil } from 'lucide-react-native';
+import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil, Check } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
 import { getRandomPrompt } from '@/services/prompts';
@@ -283,7 +283,7 @@ export default function JournalEntryScreen() {
               setHasUnsavedChanges(true);
             }}
             placeholder="Journal Title"
-            placeholderTextColor={Colors.text.medium}
+            placeholderTextColor={Colors.fade.main}
             maxLength={100}
           />
         )}
@@ -339,7 +339,14 @@ export default function JournalEntryScreen() {
           </View> */}
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
-            {isSaving ? <ActivityIndicator size="small" color="white" /> : <Text style={styles.saveButtonText}>Save</Text>}
+            {isSaving ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <View style={styles.saveButtonContent}>
+                <Text style={styles.saveButtonText}>Save</Text>
+                <Check size={20} color="white" />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -470,6 +477,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    marginBottom: 24,
   },
   promptHeader: {
     flexDirection: 'row',
@@ -527,6 +535,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     minWidth: 80,
     alignItems: 'center',
+  },
+  saveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   saveButtonText: {
     fontFamily: 'Inter-Bold',

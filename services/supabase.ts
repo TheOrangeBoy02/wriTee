@@ -17,6 +17,6 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: AsyncStorage,      // ✅ Keeps user logged in
     persistSession: true,       // ✅ Restores session after app restarts
     autoRefreshToken: true,     // ✅ Keeps session alive automatically
-    detectSessionInUrl: false,  // ✅ Needed for Expo since we don’t use browser redirects
+    detectSessionInUrl: true,   // ✅ Needed for deep link password resets and OAuth
   },
 });

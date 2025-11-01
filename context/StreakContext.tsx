@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getUserStreaks } from '@/services/user';
 import { AppState, AppStateStatus } from 'react-native';
+import { supabase } from '@/services/supabase';
 
 interface StreakContextType {
   currentStreak: number;
@@ -17,9 +18,16 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Fetch streaks from database
   const refreshStreaks = useCallback(async () => {
+    // Only fetch if authenticated
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       console.log('🔄 StreakContext: Fetching latest streaks...');
       const { currentStreak: current, bestStreak: best } = await getUserStreaks();
@@ -31,7 +39,7 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Update streaks locally (optimistic update)
   const updateStreaksLocally = useCallback((current: number, best: number) => {
@@ -40,15 +48,47 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setBestStreak(best);
   }, []);
 
-  // Initial load
+  // Listen to auth state changes
   useEffect(() => {
-    refreshStreaks();
-  }, [refreshStreaks]);
+    // Check initial auth state
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const authenticated = !!session?.user;
+      setIsAuthenticated(authenticated);
+
+      // Refresh streaks when user logs in
+      if (authenticated && event === 'SIGNED_IN') {
+        refreshStreaks();
+      }
+
+      // Reset streaks when user logs out
+      if (!authenticated) {
+        setCurrentStreak(0);
+        setBestStreak(0);
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Initial load when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshStreaks();
+    }
+  }, [isAuthenticated, refreshStreaks]);
 
   // Refresh when app comes to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
+      if (nextAppState === 'active' && isAuthenticated) {
         console.log('📱 App became active, refreshing streaks...');
         refreshStreaks();
       }
@@ -57,7 +97,7 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       subscription.remove();
     };
-  }, [refreshStreaks]);
+  }, [refreshStreaks, isAuthenticated]);
 
   const value: StreakContextType = {
     currentStreak,

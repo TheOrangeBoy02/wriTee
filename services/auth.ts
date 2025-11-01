@@ -116,6 +116,37 @@ export const authService = {
     if (error) throw error;
   },
 
+  async resetPassword(email: string) {
+    // For now, use writee:// for all environments
+    // Supabase will handle the redirect to the registered URL
+    const redirectTo = 'writee://reset-password';
+
+    console.log('🔐 Password reset redirect URL:', redirectTo);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) {
+        console.error('❌ Password reset error:', error);
+        throw error;
+      }
+
+      console.log('✅ Password reset email sent successfully');
+    } catch (error: any) {
+      console.error('❌ Failed to send password reset email:', error);
+      throw error;
+    }
+  },
+
+  async updatePassword(newPassword: string) {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) throw error;
+  },
+
   async getCurrentUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;

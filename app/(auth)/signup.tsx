@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingTop: 80,
+    paddingTop: 20,
     paddingBottom: 40,
     paddingHorizontal: 24,
     justifyContent: 'center',
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
 
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 20,
   
   },
   title: {
@@ -231,8 +231,8 @@ const styles = StyleSheet.create({
   },
 
   logoImage: {
-    width: 95,
-    height: 150,
+    width: 80,
+    height: 120,
   },
   
   errorText: {

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Calendar, Home, Settings, StickyNote } from 'lucide-react-native';
+import { Calendar, HomeSimple, Settings, Page } from 'iconoir-react-native';
 import { StyleSheet } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,7 +22,7 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ size, color }) => (
-            <Home size={size} color={color} />
+            <HomeSimple width={size} height={size} color={color} />
           ),
         }}
       />
@@ -31,7 +31,7 @@ export default function TabLayout() {
         options={{
           title: 'Journal',
           tabBarIcon: ({ size, color }) => (
-            <StickyNote size={size} color={color} />
+            <Page width={size} height={size} color={color} />
           ),
         }}
       />
@@ -40,7 +40,7 @@ export default function TabLayout() {
         options={{
           title: 'Calendar',
           tabBarIcon: ({ size, color }) => (
-            <Calendar size={size} color={color} />
+            <Calendar width={size} height={size} color={color} />
           ),
         }}
       />
@@ -49,7 +49,7 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ size, color }) => (
-            <Settings size={size} color={color} />
+            <Settings width={size} height={size} color={color} />
           ),
         }}
       />

@@ -22,6 +22,7 @@ import {
   PlayfairDisplay_600SemiBold
 } from '@expo-google-fonts/playfair-display';
 import { StreakProvider } from '@/context/StreakContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 
 SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
@@ -119,12 +120,14 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        <StreakProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            {/* Ensure every screen returns only <View> or <Text>, not raw strings */}
-          </Stack>
-          <StatusBar style="auto" />
-        </StreakProvider>
+        <ThemeProvider>
+          <StreakProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              {/* Ensure every screen returns only <View> or <Text>, not raw strings */}
+            </Stack>
+            <StatusBar style="auto" />
+          </StreakProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
   );

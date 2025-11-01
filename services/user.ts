@@ -255,21 +255,28 @@ export const updateUserSettings = async (settings: UserSettings): Promise<UserSe
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    // Use upsert with onConflict to handle existing records
     const { data, error } = await supabase
       .from('user_settings')
-      .upsert({
-        user_id: user.id,
-        notifications_enabled: settings.notificationsEnabled,
-        dark_mode_enabled: settings.darkModeEnabled,
-        preferred_journal_time: settings.preferredJournalTime,
-        reminder_enabled: settings.reminderEnabled,
-        updated_at: new Date().toISOString(),
-      })
+      .upsert(
+        {
+          user_id: user.id,
+          notifications_enabled: settings.notificationsEnabled,
+          dark_mode_enabled: settings.darkModeEnabled,
+          preferred_journal_time: settings.preferredJournalTime,
+          reminder_enabled: settings.reminderEnabled,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id', // Specify the conflict column
+          ignoreDuplicates: false, // Update on conflict instead of ignoring
+        }
+      )
       .select()
       .single();
 
     if (error) {
-      console.error('Failed to save settings to database:', error.message);
+      console.error('Failed to save settings to database:', error.message, error);
       return settings;
     }
 
@@ -281,7 +288,7 @@ export const updateUserSettings = async (settings: UserSettings): Promise<UserSe
         reminderEnabled: data.reminder_enabled,
       };
     }
-    
+
     return settings;
   } catch (error) {
     console.error('Unexpected error updating settings:', error);

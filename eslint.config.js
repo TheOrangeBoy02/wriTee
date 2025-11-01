@@ -6,5 +6,14 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ["dist/*"],
+  },
+  {
+    rules: {
+      // Disable import/no-unresolved for TypeScript path aliases
+      // Metro bundler handles these correctly at runtime
+      'import/no-unresolved': ['error', {
+        ignore: ['^@/']
+      }],
+    },
   }
 ]);

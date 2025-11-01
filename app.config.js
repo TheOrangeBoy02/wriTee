@@ -14,7 +14,10 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.writee.app",
-      buildNumber: "1.0.0"
+      buildNumber: "1.0.0",
+      infoPlist: {
+        UIBackgroundModes: ["remote-notification"]
+      }
     },
     android: {
       package: "com.writee.app",
@@ -28,7 +31,16 @@ export default {
     plugins: [
       "expo-router",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/images/writee-logo.png",
+          color: "#af1dbf",
+          sounds: ["./assets/sounds/notification.wav"],
+          mode: "production"
+        }
+      ]
     ],
     experiments: {
       typedRoutes: true

@@ -1,5 +1,13 @@
 import { Tabs } from 'expo-router';
-import { Calendar, HomeSimple, Settings, Page } from 'iconoir-react-native';
+import {
+  Calendar,
+  HomeSimple,
+  Settings,
+  Book
+} from 'iconoir-react-native';
+import {
+  Book as BookSolid
+} from 'iconoir-react-native/solid';
 import { StyleSheet } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,36 +29,37 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ size, color }) => (
-            <HomeSimple width={size} height={size} color={color} />
-          ),
+          tabBarIcon: ({ size, color, focused }) => {
+            return <HomeSimple width={size} height={size} color={color} strokeWidth={focused ? 2.5 : 2} />;
+          },
         }}
       />
       <Tabs.Screen
         name="journal"
         options={{
           title: 'Journal',
-          tabBarIcon: ({ size, color }) => (
-            <Page width={size} height={size} color={color} />
-          ),
+          tabBarIcon: ({ size, color, focused }) => {
+            const Icon = focused ? BookSolid : Book;
+            return <Icon width={size} height={size} color={color} />;
+          },
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ size, color }) => (
-            <Calendar width={size} height={size} color={color} />
-          ),
+          tabBarIcon: ({ size, color, focused }) => {
+            return <Calendar width={size} height={size} color={color} strokeWidth={focused ? 2.5 : 2} />;
+          },
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ size, color }) => (
-            <Settings width={size} height={size} color={color} />
-          ),
+          tabBarIcon: ({ size, color, focused }) => {
+            return <Settings width={size} height={size} color={color} strokeWidth={focused ? 2.5 : 2} />;
+          },
         }}
       />
       <Tabs.Screen

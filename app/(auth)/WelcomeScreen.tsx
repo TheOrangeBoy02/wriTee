@@ -36,19 +36,19 @@ const ONBOARDING_DATA: OnboardingSlide[] = [
 {
   id: '1',
   title: 'Welcome to WriTee!',
-  subtitle: 'Your personal space to capture thoughts, reflect, and grow every day.',
+  subtitle: 'Your own little corner for ideas, reflections and everything in between',
   animation: require('@/assets/animations/writee.json'),
 },
 {
   id: '2', 
   title: 'Make It a Habit',
-  subtitle: 'Stay motivated with streaks and reminders that keep journaling simple.',
+  subtitle: 'Stay on track with streaks and reminders that keep you motivated.',
   animation: require('@/assets/animations/habit.json'),
 },
 {
   id: '3',
-  title: 'Find Your Spark',
-  subtitle: 'Explore prompts that open doors to new thoughts and deeper reflections.',
+  title: 'Not sure where to begin?',
+  subtitle: 'Explore journaling and creative writing prompts to get those ideas flowing',
   animation: require('@/assets/animations/handwrite.json'),
 }
 ];

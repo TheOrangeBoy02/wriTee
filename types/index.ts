@@ -28,6 +28,24 @@ export interface UserProfile {
  
 }
 
+// Shelf type
+export interface Shelf {
+  id: string;
+  user_id: string;
+  name: string;
+  color?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Journal-Shelf junction type
+export interface JournalShelf {
+  id: string;
+  journal_entry_id: string;
+  shelf_id: string;
+  created_at: string;
+}
+
 // Journal entry type
 export interface JournalEntry {
   id: string;
@@ -38,6 +56,7 @@ export interface JournalEntry {
   updated_at: string;
   entry_date: string;
   pinned: boolean;
+  shelves?: Shelf[]; // Optional array of shelves attached to this entry
 }
 
 // User settings type

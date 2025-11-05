@@ -2,11 +2,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Image, GestureResponderEvent } from 'react-native';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
+import ShelfSelector from '@/components/ShelfSelector';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil, Check } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
+import { setShelvesForEntry } from '@/services/shelf';
 import { getRandomPrompt } from '@/services/prompts';
 import { JournalEntry } from '@/types';
 import { useStreaks } from '@/context/StreakContext';
@@ -17,6 +19,7 @@ export default function JournalEntryScreen() {
   const [entry, setEntry] = useState<JournalEntry | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [selectedShelfIds, setSelectedShelfIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,6 +57,7 @@ export default function JournalEntryScreen() {
       setEntry(entryData);
       setTitle(entryData.title);
       setContent(entryData.content);
+      setSelectedShelfIds(entryData.shelves?.map(shelf => shelf.id) || []);
     } catch (error) {
       console.error('Error loading entry:', error);
       Alert.alert('Error', 'Failed to load journal entry');
@@ -110,7 +114,7 @@ export default function JournalEntryScreen() {
     }
   };
 
-  // UPDATED: handleSave with streak refresh
+  // UPDATED: handleSave with streak refresh and shelf management
   const handleSave = async () => {
     let entryTitle = title.trim();
     if (!entryTitle) {
@@ -134,6 +138,9 @@ export default function JournalEntryScreen() {
       };
 
       const savedEntry = await updateJournalEntry(updatedEntry);
+
+      // Update shelves for the entry
+      await setShelvesForEntry(savedEntry.id, selectedShelfIds);
 
       // Update streaks and refresh context
       const entryDateStr = savedEntry.entry_date.split('T')[0];
@@ -285,6 +292,16 @@ export default function JournalEntryScreen() {
             placeholder="Journal Title"
             placeholderTextColor={Colors.fade.main}
             maxLength={100}
+          />
+        )}
+
+        {!isViewMode && (
+          <ShelfSelector
+            selectedShelfIds={selectedShelfIds}
+            onSelectionChange={(shelfIds) => {
+              setSelectedShelfIds(shelfIds);
+              setHasUnsavedChanges(true);
+            }}
           />
         )}
 

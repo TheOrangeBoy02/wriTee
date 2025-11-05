@@ -7,28 +7,57 @@ import { updateStreakAfterEntry } from '@/utils/streak';
 /**
  * Get all journal entries with pagination
  */
-export const getJournalEntries = async (page = 0, pageSize = 20): Promise<{ entries: JournalEntry[], hasMore: boolean }> => {
+export const getJournalEntries = async (page = 0, pageSize = 20, shelfId?: string): Promise<{ entries: JournalEntry[], hasMore: boolean }> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
   const from = page * pageSize;
   const to = from + pageSize - 1;
 
-  const { data, error, count } = await supabase
+  // Use inner join only when filtering by shelf, otherwise use left join
+  const joinType = shelfId ? '!inner' : '';
+
+  let query = supabase
     .from('journal_entries')
-    .select('*', { count: 'exact' })
-    .eq('user_id', user.id)
+    .select(`
+      *,
+      journal_shelves${joinType} (
+        shelf_id,
+        shelves (*)
+      )
+    `, { count: 'exact' })
+    .eq('user_id', user.id);
+
+  // Filter by shelf if shelfId is provided
+  if (shelfId) {
+    query = query.eq('journal_shelves.shelf_id', shelfId);
+  }
+
+  const { data, error, count } = await query
     .order('pinned', { ascending: false })
     .order('entry_date', { ascending: false })
     .range(from, to);
 
   if (error) throw error;
-  
+
+  // Transform data to include shelves array
+  const entries = (data || []).map((entry: any) => {
+    const shelves = entry.journal_shelves
+      ?.map((js: any) => js.shelves)
+      .filter((shelf: any) => shelf !== null) || [];
+
+    const { journal_shelves, ...entryData } = entry;
+    return {
+      ...entryData,
+      shelves
+    };
+  });
+
   const totalEntries = count || 0;
   const hasMore = (page + 1) * pageSize < totalEntries;
-  
+
   return {
-    entries: data || [],
+    entries,
     hasMore
   };
 };
@@ -42,15 +71,31 @@ export const getJournalEntry = async (id: string): Promise<JournalEntry> => {
 
   const { data, error } = await supabase
     .from('journal_entries')
-    .select('*')
+    .select(`
+      *,
+      journal_shelves (
+        shelf_id,
+        shelves (*)
+      )
+    `)
     .eq('id', id)
     .eq('user_id', user.id)
     .single();
-  
+
   if (error) throw error;
   if (!data) throw new Error('Entry not found');
-  
-  return data;
+
+  // Transform data to include shelves array
+  const shelves = (data as any).journal_shelves
+    ?.map((js: any) => js.shelves)
+    .filter((shelf: any) => shelf !== null) || [];
+
+  const { journal_shelves, ...entryData } = data as any;
+
+  return {
+    ...entryData,
+    shelves
+  };
 };
 
 /**
@@ -84,25 +129,7 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
       .select()
       .single();
 
-    if (error) {
-      // If tags column doesn't exist, try without tags
-      if (error.code === '42703' && updateData.tags !== undefined) {
-        console.warn('Tags column does not exist, updating without tags');
-        delete updateData.tags;
-        const { data: retryData, error: retryError } = await supabase
-          .from('journal_entries')
-          .update(updateData)
-          .eq('id', entry.id)
-          .eq('user_id', user.id)
-          .select()
-          .single();
-        
-        if (retryError) throw retryError;
-        if (!retryData) throw new Error('Entry not found');
-        return retryData;
-      }
-      throw error;
-    }
+    if (error) throw error;
     if (!data) throw new Error('Entry not found');
     
     return data;
@@ -126,33 +153,7 @@ export const updateJournalEntry = async (entry: Partial<JournalEntry>): Promise<
       .select()
       .single();
 
-    if (error) {
-      // If tags column doesn't exist, try without tags
-      if (error.code === '42703' && insertData.tags !== undefined) {
-        console.warn('Tags column does not exist, creating without tags');
-        delete insertData.tags;
-        const { data: retryData, error: retryError } = await supabase
-          .from('journal_entries')
-          .insert(insertData)
-          .select()
-          .single();
-        
-        if (retryError) throw retryError;
-        if (!retryData) throw new Error('Failed to create entry');
-        
-        console.log('📝 Journal entry created successfully:', retryData.id);
-        console.log('📝 About to update streak with entry date:', retryData.entry_date);
-        
-        // Update streak after creating new entry
-        await updateStreakAfterEntry(retryData.entry_date);
-        
-        // Invalidate dates cache so calendar updates
-        datesCache = null;
-        
-        return retryData;
-      }
-      throw error;
-    }
+    if (error) throw error;
     if (!data) throw new Error('Failed to create entry');
     
     console.log('📝 Journal entry created successfully:', data.id);
@@ -236,14 +237,34 @@ export const getRecentJournalEntries = async (limit = 5): Promise<JournalEntry[]
 
   const { data, error } = await supabase
     .from('journal_entries')
-    .select('*')
+    .select(`
+      *,
+      journal_shelves (
+        shelf_id,
+        shelves (*)
+      )
+    `)
     .eq('user_id', user.id)
     .order('pinned', { ascending: false })
     .order('entry_date', { ascending: false })
     .limit(limit);
 
   if (error) throw error;
-  return data || [];
+
+  // Transform data to include shelves array
+  const entries = (data || []).map((entry: any) => {
+    const shelves = entry.journal_shelves
+      ?.map((js: any) => js.shelves)
+      .filter((shelf: any) => shelf !== null) || [];
+
+    const { journal_shelves, ...entryData } = entry;
+    return {
+      ...entryData,
+      shelves
+    };
+  });
+
+  return entries;
 };
 
 export const getJournalEntryCount = async (): Promise<number> => {
@@ -271,7 +292,13 @@ export const searchJournalEntries = async (query: string, page = 0, pageSize = 1
 
   const { data, error, count } = await supabase
     .from('journal_entries')
-    .select('*', { count: 'exact' })
+    .select(`
+      *,
+      journal_shelves (
+        shelf_id,
+        shelves (*)
+      )
+    `, { count: 'exact' })
     .eq('user_id', user.id)
     .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
     .order('pinned', { ascending: false })
@@ -279,106 +306,27 @@ export const searchJournalEntries = async (query: string, page = 0, pageSize = 1
     .range(from, to);
 
   if (error) throw error;
-  
+
+  // Transform data to include shelves array
+  const entries = (data || []).map((entry: any) => {
+    const shelves = entry.journal_shelves
+      ?.map((js: any) => js.shelves)
+      .filter((shelf: any) => shelf !== null) || [];
+
+    const { journal_shelves, ...entryData } = entry;
+    return {
+      ...entryData,
+      shelves
+    };
+  });
+
   const totalEntries = count || 0;
   const hasMore = (page + 1) * pageSize < totalEntries;
-  
+
   return {
-    entries: data || [],
+    entries,
     hasMore
   };
-};
-
-/**
- * Get all unique tags from journal entries
- */
-export const getAllTags = async (): Promise<string[]> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  try {
-    const { data, error } = await supabase
-      .from('journal_entries')
-      .select('tags')
-      .eq('user_id', user.id)
-      .not('tags', 'is', null);
-
-    if (error) {
-      // If the tags column doesn't exist yet, return empty array
-      if (error.code === '42703') {
-        console.warn('Tags column does not exist yet. Please run the database migration.');
-        return [];
-      }
-      throw error;
-    }
-    
-    // Extract all unique tags
-    const allTags = new Set<string>();
-    (data || []).forEach(entry => {
-      if (entry.tags && Array.isArray(entry.tags)) {
-        entry.tags.forEach(tag => allTags.add(tag));
-      }
-    });
-    
-    return Array.from(allTags).sort();
-  } catch (error) {
-    console.error('Error loading tags:', error);
-    return [];
-  }
-};
-
-/**
- * Get journal entries filtered by tags (AND logic)
- */
-export const getJournalEntriesByTags = async (tags: string[], page = 0, pageSize = 20): Promise<{ entries: JournalEntry[], hasMore: boolean }> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  if (tags.length === 0) {
-    // If no tags selected, return all entries
-    return getJournalEntries(page, pageSize);
-  }
-
-  try {
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-
-    // Build the query to find entries that contain ALL selected tags
-    let query = supabase
-      .from('journal_entries')
-      .select('*', { count: 'exact' })
-      .eq('user_id', user.id);
-
-    // For each tag, add a condition that the tags array contains it
-    tags.forEach(tag => {
-      query = query.contains('tags', [tag]);
-    });
-
-    const { data, error, count } = await query
-      .order('pinned', { ascending: false })
-      .order('entry_date', { ascending: false })
-      .range(from, to);
-
-    if (error) {
-      // If the tags column doesn't exist yet, return all entries
-      if (error.code === '42703') {
-        console.warn('Tags column does not exist yet. Falling back to all entries.');
-        return getJournalEntries(page, pageSize);
-      }
-      throw error;
-    }
-    
-    const totalEntries = count || 0;
-    const hasMore = (page + 1) * pageSize < totalEntries;
-    
-    return {
-      entries: data || [],
-      hasMore
-    };
-  } catch (error) {
-    console.error('Error loading filtered entries:', error);
-    return getJournalEntries(page, pageSize);
-  }
 };
 
 /**

@@ -19,8 +19,26 @@ export default function MinimalRecentEntry({ entry, onPress }: MinimalRecentEntr
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.leftBar} />
       <View style={styles.content}>
+         <Text style={styles.title}>{entry.title}</Text>
         <Text style={styles.date}>{formattedDate}</Text>
-        <Text style={styles.title}>{entry.title}</Text>
+        {entry.shelves && entry.shelves.length > 0 && (
+          <View style={styles.shelvesContainer}>
+            {entry.shelves.slice(0, 2).map((shelf) => (
+              <View
+                key={shelf.id}
+                style={[
+                  styles.shelfDot,
+                  { backgroundColor: shelf.color || Colors.primary.main },
+                ]}
+              />
+            ))}
+            {entry.shelves.length > 2 && (
+              <Text style={styles.moreShelvesText}>
+                +{entry.shelves.length - 2}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -59,5 +77,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Bold',
     fontSize: 18,
     color: Colors.text.dark,
+  },
+  shelvesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  shelfDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  moreShelvesText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
+    color: '#8a8a8aff',
   },
 });

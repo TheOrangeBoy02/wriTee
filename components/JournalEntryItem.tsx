@@ -37,26 +37,61 @@ export default function JournalEntryItem({ entry, onPress }: JournalEntryItemPro
 
   const formattedDate = getFormattedDate();
 
-  const excerpt = entry.content.length > 120 
-    ? `${entry.content.substring(0, 120)}...` 
+  const excerpt = entry.content.length > 120
+    ? `${entry.content.substring(0, 120)}...`
     : entry.content;
+
+  const truncatedTitle = entry.title.length > 20
+    ? `${entry.title.substring(0, 20)}...`
+    : entry.title;
 
   return (
     <TouchableWithoutFeedback onPress={onPress}>
       <View style={styles.container}>
         <View style={styles.headerContainer}>
           <View style={styles.dateContainer}>
-            <Text style={styles.date}>{formattedDate}</Text>
+             <Text style={styles.title} numberOfLines={1}>{truncatedTitle}</Text>
+
             {entry.pinned && (
               <View style={styles.pinnedContainer}>
                 <PinIcon size={12} color={Colors.primary.main} />
-                <Text style={styles.pinnedText}>Pinned</Text>
+                {/* <Text style={styles.pinnedText}>Pinned</Text> */}
               </View>
             )}
           </View>
+            <Text style={styles.date}>{formattedDate}</Text>
         </View>
-        <Text style={styles.title}>{entry.title}</Text>
+
         <Text style={styles.excerpt}>{excerpt}</Text>
+
+        {entry.shelves && entry.shelves.length > 0 && (
+          <View style={styles.shelvesContainer}>
+            {entry.shelves.slice(0, 3).map((shelf) => (
+              <View
+                key={shelf.id}
+                style={[
+                  styles.shelfTag,
+                  { borderColor: shelf.color || Colors.primary.main },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.shelfColorDot,
+                    { backgroundColor: shelf.color || Colors.primary.main },
+                  ]}
+                />
+                <Text style={styles.shelfTagText} numberOfLines={1}>
+                  {shelf.name}
+                </Text>
+              </View>
+            ))}
+            {entry.shelves.length > 3 && (
+              <Text style={styles.moreShelvesText}>
+                +{entry.shelves.length - 3}
+              </Text>
+            )}
+          </View>
+        )}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -83,7 +118,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   date: {
-    fontFamily: 'Inter-Bold',
+    fontFamily: 'Inter-regular',
     fontSize: 14,
     color: Colors.fade.main,
   },
@@ -103,14 +138,48 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Playfair-SemiBold',
-    fontSize: 18,
+    fontSize: 20,
     color: Colors.text.dark,
-    marginBottom: 8,
+    marginBottom: 1,
   },
   excerpt: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: Colors.text.medium,
     lineHeight: 20,
+  },
+  shelvesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  shelfTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: Colors.background.main,
+   width: '0%',
+  },
+  shelfColorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  shelfTagText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 11,
+    color: Colors.text.dark,
+    flex: 1,
+  },
+  moreShelvesText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 11,
+    color: Colors.fade.main,
   },
 });

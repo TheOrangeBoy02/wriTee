@@ -10,6 +10,7 @@ const Colors = {
     dark: '#A21CAF',
   },
   accent: {
+    coral: '#FF7F50',
     light: '#F8E1FF',
     main: '#D946EF', // Bright magenta/purple
     dark: '#A21CAF',

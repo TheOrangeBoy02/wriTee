@@ -5,7 +5,7 @@ import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
 import ShelfSelector from '@/components/ShelfSelector';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil, Check } from 'lucide-react-native';
+import { ArrowLeft, Trash2, X, Pencil, Check } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
 import { setShelvesForEntry } from '@/services/shelf';
@@ -25,8 +25,6 @@ export default function JournalEntryScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState('');
-  const [selection, setSelection] = useState({ start: 0, end: 0 });
-  const [currentFormat, setCurrentFormat] = useState({ bold: false, italic: false, underline: false });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
@@ -81,6 +79,7 @@ export default function JournalEntryScreen() {
     } else {
       loadEntry();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const navigation = useNavigation();
@@ -188,40 +187,6 @@ export default function JournalEntryScreen() {
     );
   };
 
-  const formatText = (formatType: string) => {
-    setCurrentFormat(prev => ({
-      ...prev,
-      [formatType]: !prev[formatType as keyof typeof prev],
-    }));
-
-    const { start, end } = selection;
-    const selectedText = content.substring(start, end);
-    const hasSelection = start !== end;
-    let before = '';
-    let after = '';
-    let newText = '';
-
-    switch (formatType) {
-      case 'bold':
-        before = '**'; after = '**'; newText = hasSelection ? selectedText : 'bold text'; break;
-      case 'italic':
-        before = '*'; after = '*'; newText = hasSelection ? selectedText : 'italic text'; break;
-      case 'underline':
-        before = '_'; after = '_'; newText = hasSelection ? selectedText : 'underlined text'; break;
-      default:
-        return;
-    }
-
-    const formattedText = before + newText + after;
-    const newContent = content.substring(0, start) + formattedText + content.substring(end);
-    setContent(newContent);
-
-    setTimeout(() => {
-      const newCursorPos = hasSelection ? start + formattedText.length : start + before.length + newText.length + after.length;
-      contentInputRef.current?.setNativeProps({ selection: { start: newCursorPos, end: newCursorPos } });
-    }, 10);
-  };
-
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -318,7 +283,6 @@ export default function JournalEntryScreen() {
               setContent(newContent);
               setHasUnsavedChanges(true);
             }}
-            onSelectionChange={(event) => setSelection(event.nativeEvent.selection)}
             placeholder="Start writing your thoughts here..."
             placeholderTextColor={Colors.text.medium}
             multiline

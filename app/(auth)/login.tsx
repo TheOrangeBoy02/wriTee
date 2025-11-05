@@ -1,11 +1,9 @@
 // login.tsx - Corrected Navigation
 
 import { useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Mail, Lock, CircleAlert as AlertCircle, LogIn, Eye, EyeOff } from 'lucide-react-native';
-import * as WebBrowser from 'expo-web-browser';
 import Colors from '@/constants/Colors';
 import { authService } from '@/services/auth';
 import { signInSchema, validateField } from '@/utils/validation';
@@ -70,25 +68,6 @@ export default function LoginScreen() {
         setError('Unable to sign in. Please try again.');
         console.error('Login error:', err);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const { url } = await authService.signInWithGoogle();
-      
-      // Open URL in browser for OAuth flow
-      await WebBrowser.openAuthSessionAsync(url, 'writee://', {
-        showInRecents: true,
-      });
-
-    } catch (err) {
-      console.error('Google sign in error:', err);
-      setError('Failed to sign in with Google. Please try again.');
     } finally {
       setIsLoading(false);
     }

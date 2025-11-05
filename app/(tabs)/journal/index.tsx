@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, PinIcon, Search, PenLine, RefreshCw, X, TrashIcon, BookMarked, Filter } from 'lucide-react-native';
+import { Plus, PinIcon, Search, PenLine, RefreshCw, X, TrashIcon, BookMarked } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
 import { getJournalEntries, deleteJournalEntry, togglePinJournalEntry } from '@/services/journal';
@@ -54,16 +53,19 @@ const handleDeleteEntry = async (id: string) => {
   useEffect(() => {
     loadEntries();
     loadShelves();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     loadEntries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedShelfId]);
 
   useFocusEffect(
     React.useCallback(() => {
       loadEntries();
       loadShelves();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -130,18 +132,51 @@ const handleDeleteEntry = async (id: string) => {
     }
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <PenLine size={64} color={Colors.neutral.light} />
-      <Text style={styles.emptyTitle}>Start Your Journal</Text>
-      <Text style={styles.emptyText}>
-        Begin capturing your thoughts and reflections with your first entry.
-      </Text>
-      <TouchableOpacity style={styles.emptyButton} onPress={handleNewEntry}>
-        <Text style={styles.emptyButtonText}>Create First Entry</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderEmptyState = () => {
+    // If there's an active search, show "no results" message
+    if (searchTerm.trim()) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Search size={64} color={Colors.neutral.light} />
+          <Text style={styles.emptyTitle}>No Results Found</Text>
+          <Text style={styles.emptyText}>
+            No entries match "{searchTerm}". Try a different search term.
+          </Text>
+        </View>
+      );
+    }
+
+    // If filtering by shelf, show "no entries in shelf" message
+    if (selectedShelfId) {
+      const selectedShelf = shelves.find(s => s.id === selectedShelfId);
+      return (
+        <View style={styles.emptyContainer}>
+          <BookMarked size={64} color={Colors.neutral.light} />
+          <Text style={styles.emptyTitle}>No Entries in This Shelf</Text>
+          <Text style={styles.emptyText}>
+            {selectedShelf ? `"${selectedShelf.name}" doesn't have any entries yet.` : 'This shelf doesn\'t have any entries yet.'}
+          </Text>
+          <TouchableOpacity style={styles.emptyButton} onPress={handleNewEntry}>
+            <Text style={styles.emptyButtonText}>Create Entry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    // Default: no entries at all
+    return (
+      <View style={styles.emptyContainer}>
+        <PenLine size={64} color={Colors.neutral.light} />
+        <Text style={styles.emptyTitle}>Start Your Journal</Text>
+        <Text style={styles.emptyText}>
+          Begin capturing your thoughts and reflections with your first entry.
+        </Text>
+        <TouchableOpacity style={styles.emptyButton} onPress={handleNewEntry}>
+          <Text style={styles.emptyButtonText}>Create First Entry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const SwipeableItem = ({ item }: { item: JournalEntry }) => {
   const translateX = useSharedValue(0);
@@ -397,7 +432,7 @@ const styles = StyleSheet.create({
   },
   entriesList: {
     padding: 24,
-    paddingTop: 0,
+    paddingTop: 5,
     flexGrow: 1,
   },
   fabButton: {
@@ -497,22 +532,23 @@ const styles = StyleSheet.create({
   filterButtonActive: {
     backgroundColor: Colors.primary.light,
   },
+  
   shelfFilterContainer: {
-    
     marginTop: 4,
-    marginBottom: 12,
+    marginBottom: 8,
+    maxHeight: 50,
   },
   shelfFilterContent: {
-    height: 40,
     paddingHorizontal: 24,
     gap: 8,
+    alignItems: 'center',
   },
   shelfFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 20,
     backgroundColor: Colors.background.light,
     borderWidth: 1,
@@ -528,8 +564,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   shelfFilterText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
+    lineHeight: 20,
     color: Colors.text.dark,
   },
   shelfFilterTextActive: {

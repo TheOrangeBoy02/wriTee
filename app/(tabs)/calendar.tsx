@@ -1,7 +1,6 @@
 // app/(tabs)/calendar.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
 import { ChevronLeft, ChevronRight, Flame } from 'lucide-react-native';
 import { Calendar as RNCalendar, DateData } from 'react-native-calendars';
 import Header from '@/components/Header';
@@ -28,35 +27,20 @@ export default function CalendarScreen() {
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
-  const [streakDates, setStreakDates] = useState<string[]>([]);
-  const router = useRouter();
 
   // Use streak context
   const { currentStreak } = useStreaks();
-
-  useEffect(() => {
-    const today = getLocalDateString();
-    setSelectedDate(today);
-    loadJournalDates();
-  }, []);
-
-  // Recalculate streak visualization when currentStreak changes
-  useEffect(() => {
-    if (!isLoading) {
-      calculateStreakVisualization();
-    }
-  }, [currentStreak, isLoading]);
 
   const loadJournalDates = async () => {
     setIsLoading(true);
     try {
       const dates = await getJournalEntryDates();
-      
+
       const marked: MarkedDates = {};
       dates.forEach(date => {
         marked[date] = { marked: true, dotColor: Colors.primary.main };
       });
-      
+
       setMarkedDates(marked);
       calculateStreakVisualization();
     } catch (error) {
@@ -66,54 +50,24 @@ export default function CalendarScreen() {
     }
   };
 
+  useEffect(() => {
+    const today = getLocalDateString();
+    setSelectedDate(today);
+    loadJournalDates();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const calculateStreakVisualization = async () => {
-    try {
-      const dates = await getJournalEntryDates();
-      
-      if (currentStreak > 0 && dates.length > 0) {
-        const sortedDates = [...dates].sort((a, b) => 
-          new Date(b).getTime() - new Date(a).getTime()
-        );
-        
-        const streakDatesList: string[] = [];
-        const today = getLocalDateString();
-        const yesterday = getLocalDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
-        
-        let expectedDateStr = sortedDates[0] === today ? today : yesterday;
-        
-        // Show max 7 days in visualization
-        for (let i = 0; i < currentStreak && i < 7; i++) {
-          if (sortedDates.includes(expectedDateStr)) {
-            streakDatesList.push(expectedDateStr);
-          }
-          const prevDate = new Date(expectedDateStr);
-          prevDate.setDate(prevDate.getDate() - 1);
-          expectedDateStr = getLocalDateString(prevDate);
-        }
-        
-        setStreakDates(streakDatesList.reverse());
-      } else {
-        setStreakDates([]);
-      }
-    } catch (error) {
-      console.error('Error calculating streak visualization:', error);
-      setStreakDates([]);
-    }
+    // Streak visualization is now calculated directly in the render function
+    // This function is kept for compatibility but doesn't need to do anything
   };
 
-  const handleDayPress = (day: DateData) => {
-    setSelectedDate(day.dateString);
-    const hasEntry = markedDates[day.dateString]?.marked;
-    
-    if (hasEntry) {
-      router.push(`/journal/${day.dateString}`);
-    } else {
-      router.push({
-        pathname: '/journal/[id]',
-        params: { id: 'new', date: day.dateString }
-      });
+  // Recalculate streak visualization when currentStreak changes
+  useEffect(() => {
+    if (!isLoading) {
+      calculateStreakVisualization();
     }
-  };
+  }, [currentStreak, isLoading]);
 
   const handleMonthChange = (month: DateData) => {
     // Month change logic if needed

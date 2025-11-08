@@ -23,8 +23,9 @@ import {
   PlayfairDisplay_700Bold,
   PlayfairDisplay_600SemiBold
 } from '@expo-google-fonts/playfair-display';
-import { StreakProvider } from '@/context/StreakContext';
+import { StreakProvider, useStreaks } from '@/context/StreakContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import StreakCelebration from '@/components/StreakCelebration';
 
 SplashScreen.preventAutoHideAsync();
 WebBrowser.maybeCompleteAuthSession();
@@ -185,13 +186,31 @@ export default function RootLayout() {
       <ErrorBoundary>
         <ThemeProvider>
           <StreakProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              {/* Ensure every screen returns only <View> or <Text>, not raw strings */}
-            </Stack>
-            <StatusBar style="auto" />
+            <AppContent />
           </StreakProvider>
         </ThemeProvider>
       </ErrorBoundary>
     </GestureHandlerRootView>
+  );
+}
+
+function AppContent() {
+  const { celebrationData, hideCelebration } = useStreaks();
+
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* Ensure every screen returns only <View> or <Text>, not raw strings */}
+      </Stack>
+      <StatusBar style="auto" />
+      {celebrationData && (
+        <StreakCelebration
+          visible={celebrationData.visible}
+          streakCount={celebrationData.streakCount}
+          isNewRecord={celebrationData.isNewRecord}
+          onComplete={hideCelebration}
+        />
+      )}
+    </>
   );
 }

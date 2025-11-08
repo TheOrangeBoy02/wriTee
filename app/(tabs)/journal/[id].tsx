@@ -5,7 +5,8 @@ import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
 import ShelfSelector from '@/components/ShelfSelector';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil, Check } from 'lucide-react-native';
+import { ArrowLeft, Trash2, Bold, Italic, Underline, X, Pencil } from 'lucide-react-native';
+import CheckMarkIcon from '@/assets/images/check-mark-icon.svg';
 import Colors from '@/constants/Colors';
 import { getJournalEntry, updateJournalEntry, deleteJournalEntry } from '@/services/journal';
 import { setShelvesForEntry } from '@/services/shelf';
@@ -32,7 +33,7 @@ export default function JournalEntryScreen() {
   const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null);
   const contentInputRef = useRef<TextInput>(null);
   const router = useRouter();
-  const { refreshStreaks } = useStreaks();
+  const { refreshStreaks, showCelebration } = useStreaks();
 
   // Double-tap detection
   const lastTapRef = useRef<number | null>(null);
@@ -144,8 +145,13 @@ export default function JournalEntryScreen() {
 
       // Update streaks and refresh context
       const entryDateStr = savedEntry.entry_date.split('T')[0];
-      await updateStreakAfterEntry(entryDateStr);
+      const streakResult = await updateStreakAfterEntry(entryDateStr);
       await refreshStreaks();
+
+      // Show celebration if it's the first entry of the day
+      if (streakResult.shouldCelebrate) {
+        showCelebration(streakResult.currentStreak, streakResult.isNewRecord);
+      }
 
       setIsEditing(false);
       setHasUnsavedChanges(false);
@@ -274,7 +280,7 @@ export default function JournalEntryScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
+      <View style={styles.titleSection}>
         {isViewMode ? (
           <TouchableOpacity activeOpacity={0.9} onPress={handleContentDoubleTap} onLongPress={() => setIsEditing(true)}>
             <Text style={[styles.titleInput, { fontFamily: 'Playfair-Bold', fontSize: 30, color: Colors.primary.main }]}>
@@ -294,17 +300,9 @@ export default function JournalEntryScreen() {
             maxLength={100}
           />
         )}
+      </View>
 
-        {!isViewMode && (
-          <ShelfSelector
-            selectedShelfIds={selectedShelfIds}
-            onSelectionChange={(shelfIds) => {
-              setSelectedShelfIds(shelfIds);
-              setHasUnsavedChanges(true);
-            }}
-          />
-        )}
-
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
         {isViewMode ? (
           <TouchableOpacity activeOpacity={0.95} onPress={handleContentDoubleTap} onLongPress={() => setIsEditing(true)}>
             <Text style={styles.contentInput}>{content || 'Start writing your thoughts here...'}</Text>
@@ -343,17 +341,14 @@ export default function JournalEntryScreen() {
 
       {!isViewMode && (
         <View style={styles.bottomToolbar}>
-          {/* <View style={styles.formatButtons}>
-            <TouchableOpacity style={[styles.formatButton, currentFormat.bold && styles.formatButtonActive]} onPress={() => formatText('bold')}>
-              <Bold size={20} color={currentFormat.bold ? Colors.primary.main : Colors.text.dark} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.formatButton, currentFormat.italic && styles.formatButtonActive]} onPress={() => formatText('italic')}>
-              <Italic size={20} color={currentFormat.italic ? Colors.primary.main : Colors.text.dark} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.formatButton, currentFormat.underline && styles.formatButtonActive]} onPress={() => formatText('underline')}>
-              <Underline size={20} color={currentFormat.underline ? Colors.primary.main : Colors.text.dark} />
-            </TouchableOpacity>
-          </View> */}
+          <ShelfSelector
+            selectedShelfIds={selectedShelfIds}
+            onSelectionChange={(shelfIds) => {
+              setSelectedShelfIds(shelfIds);
+              setHasUnsavedChanges(true);
+            }}
+            compact
+          />
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
             {isSaving ? (
@@ -361,7 +356,7 @@ export default function JournalEntryScreen() {
             ) : (
               <View style={styles.saveButtonContent}>
                 <Text style={styles.saveButtonText}>Save</Text>
-                <Check size={20} color="white" />
+                <CheckMarkIcon width={20} height={20} />
               </View>
             )}
           </TouchableOpacity>
@@ -457,18 +452,24 @@ const styles = StyleSheet.create({
   },
   
   // Content
+  titleSection: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 8,
+    // backgroundColor: Colors.background.main,
+  },
   content: {
     flex: 1,
   },
   contentContainer: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingTop: 0,
     paddingBottom: 120, // Space for bottom toolbar
   },
   titleInput: {
     fontFamily: 'Inter-Bold',
     fontSize: 20,
     color: Colors.text.dark,
-    marginBottom: 8,
     padding: 0,
   },
   contentInput: {
@@ -531,7 +532,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: Colors.background.main,
-    borderTopWidth: 1,
+    // borderTopWidth: 1,
     borderTopColor: Colors.neutral.border,
   },
   formatButtons: {
@@ -547,9 +548,9 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: Colors.primary.main,
-    paddingHorizontal: 24,
+    paddingHorizontal: 14,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 10,
     minWidth: 80,
     alignItems: 'center',
   },

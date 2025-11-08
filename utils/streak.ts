@@ -116,26 +116,42 @@ export const calculateStreak = async (): Promise<number> => {
 /**
  * Update user's streak after creating/updating a journal entry
  * Now uses atomic RPC call instead of three separate updates
- * 
+ *
  * @param entryDate - Optional entry date (defaults to today)
+ * @returns Object with streak data and whether to show celebration
  */
-export const updateStreakAfterEntry = async (entryDate?: string): Promise<void> => {
+export const updateStreakAfterEntry = async (entryDate?: string): Promise<{
+  currentStreak: number;
+  bestStreak: number;
+  isNewRecord: boolean;
+  shouldCelebrate: boolean;
+}> => {
   try {
     console.log('🔥 Starting streak update for entry date:', entryDate);
-    
+
     // Get user ID
     const userId = await getCurrentUserId();
-    
+
+    // Get all entry dates to check if this is first entry today
+    const entryDates = await getJournalEntryDates(true);
+    const today = getLocalDateString();
+    const dateToUpdate = entryDate || today;
+
+    // Check if this is the first entry for today
+    const todayEntryCount = entryDates.filter(date => date === today).length;
+    const isFirstEntryToday = todayEntryCount === 1 && dateToUpdate === today;
+
     // Calculate streaks from all entries
     const { currentStreak, bestStreak } = await calculateStreaks();
-    const dateToUpdate = entryDate || getLocalDateString();
-    
+
     console.log('🔥 Calculated values:', {
       currentStreak,
       bestStreak,
-      lastEntryDate: dateToUpdate
+      lastEntryDate: dateToUpdate,
+      isFirstEntryToday,
+      todayEntryCount
     });
-    
+
     // Single atomic update via RPC
     const result = await updateUserStreaks(
       userId,
@@ -143,13 +159,20 @@ export const updateStreakAfterEntry = async (entryDate?: string): Promise<void> 
       bestStreak,
       dateToUpdate
     );
-    
+
     if (result.is_new_record) {
       console.log('🎉 NEW BEST STREAK RECORD!', result.best_streak);
     }
-    
+
     console.log('✅ Streak update completed successfully');
-    
+
+    return {
+      currentStreak,
+      bestStreak,
+      isNewRecord: result.is_new_record,
+      shouldCelebrate: isFirstEntryToday && currentStreak > 0,
+    };
+
   } catch (error) {
     console.error('❌ Error updating streak:', error);
     throw error;

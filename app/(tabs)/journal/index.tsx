@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, PinIcon, Search, PenLine, RefreshCw, X, TrashIcon, BookMarked, Filter } from 'lucide-react-native';
+import { Plus, PinIcon, Search, PenLine, RefreshCw, X, TrashIcon, BookMarked, Filter, XCircle } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Header from '@/components/Header';
@@ -21,7 +21,7 @@ export default function JournalScreen() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showShelfFilter, setShowShelfFilter] = useState(false);
-  const [selectedShelfId, setSelectedShelfId] = useState<string | null>(null);
+  const [selectedShelfIds, setSelectedShelfIds] = useState<string[]>([]);
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,7 +58,7 @@ const handleDeleteEntry = async (id: string) => {
 
   useEffect(() => {
     loadEntries();
-  }, [selectedShelfId]);
+  }, [selectedShelfIds]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -79,8 +79,20 @@ const handleDeleteEntry = async (id: string) => {
   const loadEntries = async () => {
     setIsLoading(true);
     try {
-      const { entries: journalEntries } = await getJournalEntries(0, 100, selectedShelfId || undefined);
-      setEntries(journalEntries);
+      // If multiple shelves selected, load all and filter client-side
+      // If single shelf, use the API parameter for efficiency
+      const singleShelfId = selectedShelfIds.length === 1 ? selectedShelfIds[0] : undefined;
+      const { entries: journalEntries } = await getJournalEntries(0, 100, singleShelfId);
+
+      // Filter by multiple shelves if needed
+      if (selectedShelfIds.length > 1) {
+        const filtered = journalEntries.filter(entry =>
+          entry.shelves?.some(shelf => selectedShelfIds.includes(shelf.id))
+        );
+        setEntries(filtered);
+      } else {
+        setEntries(journalEntries);
+      }
     } catch (error) {
       console.error('Error loading journal entries:', error);
     } finally {
@@ -131,21 +143,22 @@ const handleDeleteEntry = async (id: string) => {
   };
 
   const renderEmptyState = () => {
-    const hasSearchOrFilter = searchTerm.trim() || selectedShelfId;
+    const hasSearchOrFilter = searchTerm.trim() || selectedShelfIds.length > 0;
     const isSearching = searchTerm.trim();
-    const selectedShelf = shelves.find(shelf => shelf.id === selectedShelfId);
+    const selectedShelves = shelves.filter(shelf => selectedShelfIds.includes(shelf.id));
+    const shelfNames = selectedShelves.map(s => s.name).join(', ');
 
     if (hasSearchOrFilter) {
       return (
         <View style={styles.emptyContainer}>
           <Search size={64} color={Colors.neutral.light} />
           <Text style={styles.emptyTitle}>
-            {isSearching ? 'No Results Found' : `No Entries in ${selectedShelf?.name || 'This Shelf'}`}
+            {isSearching ? 'No Results Found' : `No Entries in ${shelfNames || 'Selected Shelves'}`}
           </Text>
           <Text style={styles.emptyText}>
             {isSearching
               ? `No entries match "${searchTerm}". Try a different search term.`
-              : `${selectedShelf?.name || 'This shelf'} is empty. Add entries to this shelf to see them here.`}
+              : `${shelfNames || 'These shelves are'} empty. Add entries to see them here.`}
           </Text>
         </View>
       );
@@ -229,10 +242,10 @@ const handleDeleteEntry = async (id: string) => {
         <Text style={styles.headerTitle}>Journal</Text>
         <View style={styles.actionsContainer}>
           <TouchableOpacity
-            style={[styles.filterButton, selectedShelfId && styles.filterButtonActive]}
+            style={[styles.filterButton, selectedShelfIds.length > 0 && styles.filterButtonActive]}
             onPress={() => setShowShelfFilter((prev) => !prev)}
           >
-            <BookMarked size={20} color={selectedShelfId ? Colors.primary.main : Colors.text.medium} />
+            <BookMarked size={20} color={selectedShelfIds.length > 0 ? Colors.primary.main : Colors.text.medium} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.searchButton, showSearch && styles.searchButtonActive]}
@@ -261,39 +274,49 @@ const handleDeleteEntry = async (id: string) => {
           style={styles.shelfFilterContainer}
           contentContainerStyle={styles.shelfFilterContent}
         >
-          <TouchableOpacity
-            style={[styles.shelfFilterChip, !selectedShelfId && styles.shelfFilterChipActive]}
-            onPress={() => setSelectedShelfId(null)}
-          >
-            <Text style={[styles.shelfFilterText, !selectedShelfId && styles.shelfFilterTextActive]}>
-              All Entries
-            </Text>
-          </TouchableOpacity>
-          {shelves.map((shelf) => (
+          {selectedShelfIds.length > 0 && (
             <TouchableOpacity
-              key={shelf.id}
-              style={[
-                styles.shelfFilterChip,
-                selectedShelfId === shelf.id && styles.shelfFilterChipActive,
-              ]}
-              onPress={() => setSelectedShelfId(shelf.id)}
+              style={styles.clearFilterChip}
+              onPress={() => setSelectedShelfIds([])}
             >
-              <View
-                style={[
-                  styles.shelfFilterDot,
-                  { backgroundColor: shelf.color || Colors.primary.main },
-                ]}
-              />
-              <Text
-                style={[
-                  styles.shelfFilterText,
-                  selectedShelfId === shelf.id && styles.shelfFilterTextActive,
-                ]}
-              >
-                {shelf.name}
-              </Text>
+              <XCircle size={16} color={Colors.text.medium} />
+
             </TouchableOpacity>
-          ))}
+          )}
+          {shelves.map((shelf) => {
+            const isSelected = selectedShelfIds.includes(shelf.id);
+            return (
+              <TouchableOpacity
+                key={shelf.id}
+                style={[
+                  styles.shelfFilterChip,
+                  isSelected && styles.shelfFilterChipActive,
+                ]}
+                onPress={() => {
+                  if (isSelected) {
+                    setSelectedShelfIds(selectedShelfIds.filter(id => id !== shelf.id));
+                  } else {
+                    setSelectedShelfIds([...selectedShelfIds, shelf.id]);
+                  }
+                }}
+              >
+                <View
+                  style={[
+                    styles.shelfFilterDot,
+                    { backgroundColor: shelf.color || Colors.primary.main },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.shelfFilterText,
+                    isSelected && styles.shelfFilterTextActive,
+                  ]}
+                >
+                  {shelf.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       )}
 
@@ -520,7 +543,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary.light,
   },
   shelfFilterContainer: {
-    backgroundColor: Colors.background.light,
+    // backgroundColor: Colors.background.light,
     marginTop: 4,
     marginBottom: 12,
     flexGrow: 0,
@@ -532,6 +555,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     flexGrow: 0,
+  },
+  clearFilterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.background.light,
+    borderWidth: 1,
+    borderColor: Colors.text.light,
+  },
+  clearFilterText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+    color: Colors.text.medium,
   },
   shelfFilterChip: {
     flexDirection: 'row',

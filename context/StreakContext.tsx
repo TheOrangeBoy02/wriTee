@@ -10,6 +10,9 @@ interface StreakContextType {
   isLoading: boolean;
   refreshStreaks: () => Promise<void>;
   updateStreaksLocally: (current: number, best: number) => void;
+  showCelebration: (streakCount: number, isNewRecord?: boolean) => void;
+  hideCelebration: () => void;
+  celebrationData: { visible: boolean; streakCount: number; isNewRecord: boolean } | null;
 }
 
 const StreakContext = createContext<StreakContextType | undefined>(undefined);
@@ -19,6 +22,7 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [bestStreak, setBestStreak] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<{ visible: boolean; streakCount: number; isNewRecord: boolean } | null>(null);
 
   // Fetch streaks from database
   const refreshStreaks = useCallback(async () => {
@@ -46,6 +50,16 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     console.log('⚡ StreakContext: Local streak update:', { current, best });
     setCurrentStreak(current);
     setBestStreak(best);
+  }, []);
+
+  // Show celebration
+  const showCelebration = useCallback((streakCount: number, isNewRecord = false) => {
+    setCelebrationData({ visible: true, streakCount, isNewRecord });
+  }, []);
+
+  // Hide celebration
+  const hideCelebration = useCallback(() => {
+    setCelebrationData(null);
   }, []);
 
   // Listen to auth state changes
@@ -105,6 +119,9 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isLoading,
     refreshStreaks,
     updateStreaksLocally,
+    showCelebration,
+    hideCelebration,
+    celebrationData,
   };
 
   return <StreakContext.Provider value={value}>{children}</StreakContext.Provider>;

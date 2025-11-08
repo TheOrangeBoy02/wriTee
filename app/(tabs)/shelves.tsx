@@ -12,7 +12,7 @@ import {
   Modal,
 } from 'react-native';
 import { Plus, Edit2, Trash2, X } from 'lucide-react-native';
-import ShelfIcon from '@/assets/images/shelf-icon.svg';
+import ShelfIcon from '@/components/ShelfIcon';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import { Shelf } from '@/types';
@@ -225,7 +225,7 @@ export default function ShelvesScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
           <View style={styles.headerTextContainer}>
-            <ShelfIcon width={32} height={32} fill={Colors.primary.main} />
+            <ShelfIcon width={32} height={32} fill={Colors.primary.main} /> 
             <Text style={styles.headerText}>
               Organize your journal entries with shelves
             </Text>

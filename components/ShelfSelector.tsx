@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { X, Check } from 'lucide-react-native';
-import ShelfIcon from '@/assets/images/shelf-icon.svg';
+import ShelfIcon from '@/components/ShelfIcon';
 import Colors from '@/constants/Colors';
 import { Shelf } from '@/types';
 import { getShelves } from '@/services/shelf';
@@ -343,16 +343,18 @@ const styles = StyleSheet.create({
   compactButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: Colors.primary.light,
-    borderRadius: 16,
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: Colors.background.light,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.neutral.border,
   },
   compactButtonText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: Colors.primary.main,
+    fontFamily: 'Inter-Medium',
+    fontSize: 15,
+    color: Colors.text.dark,
   },
   modalOverlay: {
     flex: 1,
@@ -360,7 +362,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: Colors.background.white,
+    backgroundColor: Colors.background.main,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
@@ -450,6 +452,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
-    color: Colors.background.white,
+    color: Colors.background.main,
   },
 });

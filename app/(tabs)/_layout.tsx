@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
+import ShelfIcon from '@/components/ShelfIcon';
 import {
   Calendar,
   HomeSimple,
   Settings,
-  Book
+  Book,
+  BookStack
 } from 'iconoir-react-native';
 import {
   Book as BookSolid
@@ -44,6 +46,15 @@ export default function TabLayout() {
           },
         }}
       />
+       <Tabs.Screen
+        name="shelves"
+        options={{
+          title: 'Shelves',
+          tabBarIcon: ({ size, color, focused }) => {
+            return <ShelfIcon width={size} height={size} color={color} />;
+          },
+        }}
+      />
       <Tabs.Screen
         name="calendar"
         options={{
@@ -62,6 +73,7 @@ export default function TabLayout() {
           },
         }}
       />
+    
       <Tabs.Screen
         name="profile-settings"
         options={{

@@ -8,7 +8,6 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { ChevronRight } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -25,6 +24,7 @@ interface StreakCelebrationProps {
   streakCount: number;
   isNewRecord?: boolean;
   onComplete: () => void;
+  onNavigateToJournal?: () => void;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -125,6 +125,7 @@ export default function StreakCelebration({
   streakCount,
   isNewRecord = false,
   onComplete,
+  onNavigateToJournal,
 }: StreakCelebrationProps) {
   // Animation values
   const opacity = useSharedValue(0);
@@ -132,7 +133,6 @@ export default function StreakCelebration({
   const confettiOpacity = useSharedValue(0);
   const logoOpacity = useSharedValue(0);
   const buttonOpacity = useSharedValue(0);
-  const chevronTranslateX = useSharedValue(0);
   const [confettiData] = React.useState(generateConfettiData());
 
   useEffect(() => {
@@ -156,26 +156,17 @@ export default function StreakCelebration({
 
       // Button fade in after everything else
       buttonOpacity.value = withDelay(800, withTiming(1, { duration: 400 }));
-
-      // Chevron subtle animation
-      chevronTranslateX.value = withDelay(
-        1200,
-        withRepeat(
-          withSequence(
-            withTiming(4, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-            withTiming(0, { duration: 600, easing: Easing.inOut(Easing.ease) })
-          ),
-          -1,
-          false
-        )
-      );
     }
   }, [visible]);
 
   const handleContinue = () => {
+    // Close modal first with fade out animation
     opacity.value = withTiming(0, { duration: 300 }, (finished) => {
       if (finished) {
+        // Call onComplete to hide the modal
         onComplete();
+        // Navigate after modal is closed to prevent race condition
+        onNavigateToJournal?.();
       }
     });
   };
@@ -189,16 +180,8 @@ export default function StreakCelebration({
     opacity: confettiOpacity.value,
   }));
 
-  const logoStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-  }));
-
   const buttonStyle = useAnimatedStyle(() => ({
     opacity: buttonOpacity.value,
-  }));
-
-  const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: chevronTranslateX.value }],
   }));
 
   if (!visible) return null;
@@ -232,7 +215,7 @@ export default function StreakCelebration({
             </View>
 
             {/* Message */}
-            <Text style={styles.title}>Streak Continued!</Text>
+            <Text style={styles.title}>Your streak just leveled up!</Text>
             <Text style={styles.subtitle}>
               You're on fire! Keep the momentum going.
             </Text>
@@ -249,9 +232,6 @@ export default function StreakCelebration({
           <Animated.View style={buttonStyle}>
             <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
               <Text style={styles.continueButtonText}>Continue</Text>
-              <Animated.View style={chevronStyle}>
-                <ChevronRight size={24} color={Colors.background.main} strokeWidth={3} />
-              </Animated.View>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -302,14 +282,14 @@ const styles = StyleSheet.create({
   },
   streakNumber: {
     fontFamily: 'Playfair-Bold',
-    fontSize: 72,
+    fontSize: 102,
     color: Colors.primary.main,
     textAlign: 'center',
     lineHeight: 80,
   },
   dayText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 20,
+    fontSize: 22,
     color: Colors.text.medium,
     textAlign: 'center',
     marginTop: -8,
@@ -317,7 +297,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Playfair-Bold',
-    fontSize: 28,
+    fontSize: 24,
     color: Colors.text.dark,
     marginBottom: 8,
     textAlign: 'center',
@@ -342,7 +322,6 @@ const styles = StyleSheet.create({
     color: '#8B4513',
   },
   continueButton: {
-    flexDirection: 'row',
     backgroundColor: Colors.primary.main,
     paddingHorizontal: 48,
     paddingVertical: 16,
@@ -350,8 +329,6 @@ const styles = StyleSheet.create({
     marginTop: 60,
     minWidth: 200,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
   },
   continueButtonText: {
     fontFamily: 'Inter-Bold',

@@ -196,6 +196,12 @@ export default function RootLayout() {
 
 function AppContent() {
   const { celebrationData, hideCelebration } = useStreaks();
+  const router = useRouter();
+
+  const handleNavigateToJournal = () => {
+    // Use replace to avoid navigation stack issues when modal is dismissing
+    router.replace('/(tabs)/journal');
+  };
 
   return (
     <>
@@ -209,6 +215,7 @@ function AppContent() {
           streakCount={celebrationData.streakCount}
           isNewRecord={celebrationData.isNewRecord}
           onComplete={hideCelebration}
+          onNavigateToJournal={handleNavigateToJournal}
         />
       )}
     </>

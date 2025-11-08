@@ -130,18 +130,40 @@ const handleDeleteEntry = async (id: string) => {
     }
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <PenLine size={64} color={Colors.neutral.light} />
-      <Text style={styles.emptyTitle}>Start Your Journal</Text>
-      <Text style={styles.emptyText}>
-        Begin capturing your thoughts and reflections with your first entry.
-      </Text>
-      <TouchableOpacity style={styles.emptyButton} onPress={handleNewEntry}>
-        <Text style={styles.emptyButtonText}>Create First Entry</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  const renderEmptyState = () => {
+    const hasSearchOrFilter = searchTerm.trim() || selectedShelfId;
+    const isSearching = searchTerm.trim();
+    const selectedShelf = shelves.find(shelf => shelf.id === selectedShelfId);
+
+    if (hasSearchOrFilter) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Search size={64} color={Colors.neutral.light} />
+          <Text style={styles.emptyTitle}>
+            {isSearching ? 'No Results Found' : `No Entries in ${selectedShelf?.name || 'This Shelf'}`}
+          </Text>
+          <Text style={styles.emptyText}>
+            {isSearching
+              ? `No entries match "${searchTerm}". Try a different search term.`
+              : `${selectedShelf?.name || 'This shelf'} is empty. Add entries to this shelf to see them here.`}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.emptyContainer}>
+        <PenLine size={64} color={Colors.neutral.light} />
+        <Text style={styles.emptyTitle}>Start Your Journal</Text>
+        <Text style={styles.emptyText}>
+          Begin capturing your thoughts and reflections with your first entry.
+        </Text>
+        <TouchableOpacity style={styles.emptyButton} onPress={handleNewEntry}>
+          <Text style={styles.emptyButtonText}>Create First Entry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const SwipeableItem = ({ item }: { item: JournalEntry }) => {
   const translateX = useSharedValue(0);
@@ -498,21 +520,25 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary.light,
   },
   shelfFilterContainer: {
-    
+    backgroundColor: Colors.background.light,
     marginTop: 4,
     marginBottom: 12,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   shelfFilterContent: {
-    height: 40,
     paddingHorizontal: 24,
     gap: 8,
+    alignItems: 'center',
+    paddingVertical: 8,
+    flexGrow: 0,
   },
   shelfFilterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 6,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: Colors.background.light,
     borderWidth: 1,
@@ -528,7 +554,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   shelfFilterText: {
-    fontFamily: 'Inter-Regular',
+    fontFamily: 'Inter-Bold',
     fontSize: 14,
     color: Colors.text.dark,
   },

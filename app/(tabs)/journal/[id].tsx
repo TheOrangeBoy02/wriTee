@@ -526,6 +526,8 @@ const styles = StyleSheet.create({
   
   // Bottom Toolbar
   bottomToolbar: {
+     borderTopLeftRadius: 25,
+  borderTopRightRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

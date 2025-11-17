@@ -48,19 +48,14 @@ export default function JournalEntryItem({ entry, onPress }: JournalEntryItemPro
   return (
     <TouchableWithoutFeedback onPress={onPress}>
       <View style={styles.container}>
-        <View style={styles.headerContainer}>
-          <View style={styles.dateContainer}>
-             <Text style={styles.title} numberOfLines={1}>{truncatedTitle}</Text>
-
-            {entry.pinned && (
-              <View style={styles.pinnedContainer}>
-                <PinIcon size={12} color={Colors.primary.main} />
-                {/* <Text style={styles.pinnedText}>Pinned</Text> */}
-              </View>
-            )}
+        {entry.pinned && (
+          <View style={styles.pinnedContainer}>
+            <PinIcon size={14} color={Colors.primary.main} />
           </View>
-            <Text style={styles.date}>{formattedDate}</Text>
-        </View>
+        )}
+
+        <Text style={styles.title} numberOfLines={1}>{truncatedTitle}</Text>
+        <Text style={styles.date}>{formattedDate}</Text>
 
         <Text style={styles.excerpt}>{excerpt}</Text>
 
@@ -105,31 +100,22 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     borderLeftWidth: 4,
     borderLeftColor: Colors.primary.main,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    position: 'relative',
   },
   date: {
     fontFamily: 'Inter-regular',
     fontSize: 14,
     color: Colors.fade.main,
+    marginBottom: 8,
   },
   pinnedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    position: 'absolute',
+    top: 12,
+    right: 12,
     backgroundColor: Colors.primary.light,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    padding: 6,
     borderRadius: 12,
+    zIndex: 1,
   },
   pinnedText: {
     fontFamily: 'Inter-Medium',
@@ -141,6 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.text.dark,
     marginBottom: 1,
+    paddingRight: 40,
   },
   excerpt: {
     fontFamily: 'Inter-Regular',

@@ -227,7 +227,12 @@ export default function SettingsScreen() {
           </View>
 
           <View style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}>
-            <View style={styles.settingLeft}>
+            <TouchableOpacity
+              style={styles.settingLeft}
+              onPress={handleTimePickerOpen}
+              disabled={!settings.reminderEnabled || !settings.notificationsEnabled}
+              activeOpacity={0.7}
+            >
               <Clock size={20} color={colors.text.dark} />
               <View>
                 <Text style={[styles.settingText, { color: colors.text.dark }]}>Journal Reminder</Text>
@@ -235,7 +240,7 @@ export default function SettingsScreen() {
                   <Text style={[styles.helperText, { color: colors.text.light }]}>Enable notifications first</Text>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
             <View style={styles.reminderRight}>
               <Switch
                 value={settings.reminderEnabled}

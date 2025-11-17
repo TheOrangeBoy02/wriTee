@@ -13,6 +13,7 @@ import JournalEntryItem from '@/components/JournalEntryItem';
 import { getJournalEntries, deleteJournalEntry, togglePinJournalEntry } from '@/services/journal';
 import { getShelves } from '@/services/shelf';
 import { JournalEntry, Shelf } from '@/types';
+import ShelfIcon from '@/components/ShelfIcon';
 
 
 
@@ -245,7 +246,7 @@ const handleDeleteEntry = async (id: string) => {
             style={[styles.filterButton, selectedShelfIds.length > 0 && styles.filterButtonActive]}
             onPress={() => setShowShelfFilter((prev) => !prev)}
           >
-            <BookMarked size={20} color={selectedShelfIds.length > 0 ? Colors.primary.main : Colors.text.medium} />
+            <ShelfIcon color={selectedShelfIds.length > 0 ? Colors.primary.main : Colors.text.medium} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.searchButton, showSearch && styles.searchButtonActive]}

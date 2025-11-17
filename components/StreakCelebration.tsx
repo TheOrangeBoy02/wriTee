@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Modal,
   Dimensions,
-  Image,
   TouchableOpacity,
 } from 'react-native';
 import Animated, {
@@ -17,7 +16,10 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
+import { ChevronRight } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
+import { runOnJS } from 'react-native-reanimated';
+
 
 interface StreakCelebrationProps {
   visible: boolean;
@@ -133,6 +135,7 @@ export default function StreakCelebration({
   const confettiOpacity = useSharedValue(0);
   const logoOpacity = useSharedValue(0);
   const buttonOpacity = useSharedValue(0);
+  const chevronTranslateX = useSharedValue(0);
   const [confettiData] = React.useState(generateConfettiData());
 
   useEffect(() => {
@@ -143,6 +146,7 @@ export default function StreakCelebration({
       confettiOpacity.value = 0;
       logoOpacity.value = 0;
       buttonOpacity.value = 0;
+      chevronTranslateX.value = 0;
 
       // Smooth fade in and slide up
       opacity.value = withTiming(1, { duration: 300 });
@@ -156,18 +160,30 @@ export default function StreakCelebration({
 
       // Button fade in after everything else
       buttonOpacity.value = withDelay(800, withTiming(1, { duration: 400 }));
+
+      // Chevron subtle left-right animation (starts after button fades in)
+      chevronTranslateX.value = withDelay(
+        1200,
+        withRepeat(
+          withSequence(
+            withTiming(4, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+            withTiming(0, { duration: 600, easing: Easing.inOut(Easing.ease) })
+          ),
+          -1,
+          false
+        )
+      );
     }
   }, [visible]);
 
   const handleContinue = () => {
     // Close modal first with fade out animation
-    opacity.value = withTiming(0, { duration: 300 }, (finished) => {
-      if (finished) {
-        // Call onComplete to hide the modal
-        onComplete();
-        // Navigate after modal is closed to prevent race condition
-        onNavigateToJournal?.();
-      }
+  opacity.value = withTiming(0, { duration: 300 }, (finished) => {
+    if (finished) {
+      // Use runOnJS to safely call React/JS functions from Reanimated thread
+      runOnJS(onComplete)();
+      if (onNavigateToJournal) runOnJS(onNavigateToJournal)();
+    }
     });
   };
 
@@ -182,6 +198,10 @@ export default function StreakCelebration({
 
   const buttonStyle = useAnimatedStyle(() => ({
     opacity: buttonOpacity.value,
+  }));
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: chevronTranslateX.value }],
   }));
 
   if (!visible) return null;
@@ -232,6 +252,9 @@ export default function StreakCelebration({
           <Animated.View style={buttonStyle}>
             <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
               <Text style={styles.continueButtonText}>Continue</Text>
+              <Animated.View style={chevronStyle}>
+                <ChevronRight size={24} color={Colors.background.main} strokeWidth={3} />
+              </Animated.View>
             </TouchableOpacity>
           </Animated.View>
         </Animated.View>
@@ -292,7 +315,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: Colors.text.medium,
     textAlign: 'center',
-    marginTop: -8,
+    marginTop: -2,
     marginBottom: 16,
   },
   title: {
@@ -322,6 +345,7 @@ const styles = StyleSheet.create({
     color: '#8B4513',
   },
   continueButton: {
+    flexDirection: 'row',
     backgroundColor: Colors.primary.main,
     paddingHorizontal: 48,
     paddingVertical: 16,
@@ -329,6 +353,8 @@ const styles = StyleSheet.create({
     marginTop: 60,
     minWidth: 200,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   continueButtonText: {
     fontFamily: 'Inter-Bold',

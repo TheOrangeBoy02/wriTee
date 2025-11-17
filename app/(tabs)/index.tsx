@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   },
   streakContainer: {
     alignContent: 'center',
-    backgroundColor: Colors.background.light,
+    // backgroundColor: Colors.background.light,
     borderRadius: 16,
     marginBottom: 32,
   },

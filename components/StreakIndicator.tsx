@@ -49,13 +49,16 @@ export default function StreakIndicator({ streak, label = "Current Streak" }: St
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 20,
   },
   streakCard: {
-    backgroundColor: Colors.background.light,
+    // backgroundColor: Colors.background.light,
     borderRadius: 16,
     padding: 20,
-   
+    width: 160,
+    marginHorizontal: -20,
+    // borderWidth: 1,
+    borderColor:Colors.primary.main,
   },
   streakHeader: {
     flexDirection: 'row',

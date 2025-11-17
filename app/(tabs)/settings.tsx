@@ -17,7 +17,7 @@ import {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { colors, isDarkMode, setDarkMode } = useTheme();
+  const { colors, setDarkMode } = useTheme();
   const [settings, setSettings] = useState<UserSettings>({
     notificationsEnabled: true,
     darkModeEnabled: false,

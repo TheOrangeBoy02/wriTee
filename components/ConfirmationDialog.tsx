@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Modal, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, Modal, StyleSheet, ViewStyle, TextStyle, Text } from 'react-native';
 import { AccessibleButton } from './AccessibleButton';
-import { Text } from 'react-native';
 import Colors from '../constants/Colors';
 
 interface ConfirmationDialogProps {

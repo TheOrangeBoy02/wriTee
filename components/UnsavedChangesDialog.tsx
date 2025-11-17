@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Animated } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import Colors from '@/constants/Colors';
 
 interface UnsavedChangesDialogProps {

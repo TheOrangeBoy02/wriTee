@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Lock, Eye, EyeOff, Check, CircleAlert as AlertCircle } from 'lucide-react-native';
 import Colors from '@/constants/Colors';
 import { authService } from '@/services/auth';

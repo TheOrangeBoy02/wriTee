@@ -2,12 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TouchableWithoutFeedback, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, PinIcon, Search, PenLine, RefreshCw, X, TrashIcon, BookMarked, Filter, XCircle } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
 import { getJournalEntries, deleteJournalEntry, togglePinJournalEntry } from '@/services/journal';
@@ -55,6 +54,7 @@ const handleDeleteEntry = async (id: string) => {
   useEffect(() => {
     loadEntries();
     loadShelves();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -65,6 +65,7 @@ const handleDeleteEntry = async (id: string) => {
     React.useCallback(() => {
       loadEntries();
       loadShelves();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
@@ -443,7 +444,7 @@ const styles = StyleSheet.create({
   },
   entriesList: {
     padding: 24,
-    paddingTop: 0,
+    paddingTop: 5,
     flexGrow: 1,
   },
   fabButton: {
@@ -543,6 +544,7 @@ const styles = StyleSheet.create({
   filterButtonActive: {
     backgroundColor: Colors.primary.light,
   },
+  
   shelfFilterContainer: {
     // backgroundColor: Colors.background.light,
     marginTop: 4,
@@ -596,6 +598,7 @@ const styles = StyleSheet.create({
   shelfFilterText: {
     fontFamily: 'Inter-Bold',
     fontSize: 14,
+    lineHeight: 20,
     color: Colors.text.dark,
   },
   shelfFilterTextActive: {

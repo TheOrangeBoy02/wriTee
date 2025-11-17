@@ -7,7 +7,6 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { View, Text } from 'react-native';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { useFonts } from 'expo-font';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -78,7 +77,7 @@ export default function RootLayout() {
       console.log('🔗 Deep link received:', url);
 
       // Parse the URL
-      const { path, queryParams } = Linking.parse(url);
+      const { path } = Linking.parse(url);
 
       // Check if it's a password reset link
       // Handle both exp:// (Expo Go) and writee:// (production) schemes

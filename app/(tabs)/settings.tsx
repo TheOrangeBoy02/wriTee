@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LogOut, Bell, Moon, User, Clock, Trash2 } from 'lucide-react-native';
+import { LogOut, Bell, Moon, User, Clock, Trash2, Shield, MessageCircle } from 'lucide-react-native';
 import Header from '@/components/Header';
 import TimePickerModal from '@/components/TimePickerModal';
 import { useTheme } from '@/context/ThemeContext';
@@ -268,6 +268,30 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
           </View>
+        </View>
+
+        <View style={styles.sectionContainer}>
+          <Text style={[styles.sectionTitle, { color: colors.text.dark }]}>Support</Text>
+
+          <TouchableOpacity
+            style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}
+            onPress={() => router.push('/(tabs)/privacy-policy')}
+          >
+            <View style={styles.settingLeft}>
+              <Shield size={20} color={colors.text.dark} />
+              <Text style={[styles.settingText, { color: colors.text.dark }]}>Privacy Policy</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}
+            onPress={() => router.push('/(tabs)/feedback')}
+          >
+            <View style={styles.settingLeft}>
+              <MessageCircle size={20} color={colors.text.dark} />
+              <Text style={[styles.settingText, { color: colors.text.dark }]}>Queries & Feedback</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.sectionContainer}>

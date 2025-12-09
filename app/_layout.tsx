@@ -5,6 +5,7 @@ import { Stack, SplashScreen, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -62,10 +63,20 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    const { unsubscribe } = authService.onAuthStateChange((user) => {
+    const { unsubscribe } = authService.onAuthStateChange(async (user) => {
       console.log('Auth state changed:', !!user);
       setIsAuthenticated(!!user);
       setIsInitializing(false);
+
+      // Register for push notifications when user logs in
+      if (user) {
+        try {
+          const { setupPushNotifications } = await import('@/services/notifications');
+          await setupPushNotifications();
+        } catch (error) {
+          console.error('Failed to setup push notifications:', error);
+        }
+      }
     });
     return unsubscribe;
   }, []);
@@ -201,6 +212,37 @@ function AppContent() {
     // Use replace to avoid navigation stack issues when modal is dismissing
     router.replace('/(tabs)/journal');
   };
+
+  // Handle notification responses
+  useEffect(() => {
+    // Handle notification received while app is foregrounded
+    const notificationReceivedSubscription =
+      Notifications.addNotificationReceivedListener((notification) => {
+        console.log('Notification received:', notification);
+      });
+
+    // Handle notification tapped (opens app)
+    const notificationResponseSubscription =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log('Notification response:', response);
+
+        const data = response.notification.request.content.data;
+
+        // Deep link based on notification type
+        if (data.type === 'journal-reminder') {
+          router.push('/(tabs)/journal');
+        } else if (data.type === 'streak-milestone') {
+          router.push('/(tabs)');
+        } else if (data.screen) {
+          router.push(data.screen as any);
+        }
+      });
+
+    return () => {
+      notificationReceivedSubscription.remove();
+      notificationResponseSubscription.remove();
+    };
+  }, [router]);
 
   return (
     <>

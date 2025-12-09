@@ -81,6 +81,22 @@ export default function TabLayout() {
           title: 'Profile Settings',
         }}
       />
+
+      <Tabs.Screen
+        name="privacy-policy"
+        options={{
+          href: null, // Hide from tab bar
+          title: 'Privacy Policy',
+        }}
+      />
+
+      <Tabs.Screen
+        name="feedback"
+        options={{
+          href: null, // Hide from tab bar
+          title: 'Feedback',
+        }}
+      />
     </Tabs>
   );
 }

@@ -146,3 +146,14 @@ export const sendTestNotification = async (): Promise<void> => {
     console.error('Error sending test notification:', error);
   }
 };
+
+// Re-export push notification functions
+export {
+  setupPushNotifications,
+  registerForPushNotifications,
+  savePushToken,
+  removePushToken,
+  hasActivePushToken,
+  refreshPushToken,
+  canSendPushNotifications,
+} from './pushNotifications';

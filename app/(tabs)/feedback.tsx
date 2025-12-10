@@ -9,13 +9,13 @@ import {
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
 import { getUserProfile } from '@/services/user';
-import { supabase } from '@/services/supabase';
 
 interface FeedbackForm {
   name: string;
@@ -108,39 +108,33 @@ export default function FeedbackScreen() {
     setSubmitting(true);
 
     try {
-      // Get current session for auth
-      const { data: { session } } = await supabase.auth.getSession();
+      // Construct mailto link with pre-filled content
+      const subject = encodeURIComponent(`WriTee Feedback: ${form.subject.trim()}`);
+      const body = encodeURIComponent(
+        `Name: ${form.name.trim()}\n\nMessage:\n${form.message.trim()}`
+      );
+      const mailtoUrl = `mailto:writee@tamandakanjaye.com?subject=${subject}&body=${body}`;
 
-      if (!session) {
-        Alert.alert('Error', 'You must be logged in to send feedback.');
+      // Check if the device can open the mailto link
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+
+      if (!canOpen) {
+        Alert.alert(
+          'Error',
+          'Unable to open email app. Please ensure you have an email client configured on your device.',
+          [{ text: 'OK' }]
+        );
         setSubmitting(false);
         return;
       }
 
-      // Call Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('send-feedback', {
-        body: {
-          name: form.name.trim(),
-          email: form.email.trim(),
-          subject: form.subject.trim(),
-          message: form.message.trim(),
-        },
-      });
+      // Open the email app
+      await Linking.openURL(mailtoUrl);
 
-      if (error) {
-        console.error('Error sending feedback:', error);
-        Alert.alert(
-          'Error',
-          'Failed to send feedback. Please try again later.',
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      // Success
+      // Show success message and reset form
       Alert.alert(
-        'Success',
-        'Thank you for your feedback! We\'ll get back to you soon.',
+        'Email App Opened',
+        'Please send the email from your email app to submit your feedback.',
         [
           {
             text: 'OK',
@@ -158,10 +152,10 @@ export default function FeedbackScreen() {
         ]
       );
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('Error opening email app:', error);
       Alert.alert(
         'Error',
-        'An unexpected error occurred. Please try again.',
+        'Failed to open email app. Please try again or email us directly at writee@tamandakanjaye.com',
         [{ text: 'OK' }]
       );
     } finally {

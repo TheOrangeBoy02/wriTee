@@ -1,12 +1,13 @@
-import { Stack } from 'expo-router';
+import { TransitionStack } from '@/navigation/TransitionStack';
+import { SettingsTransition } from '@/navigation/transitions';
 
 export default function SettingsLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="profile" />
-      <Stack.Screen name="privacy-policy" />
-      <Stack.Screen name="feedback" />
-    </Stack>
+    <TransitionStack screenOptions={SettingsTransition}>
+      <TransitionStack.Screen name="index" />
+      <TransitionStack.Screen name="profile" />
+      <TransitionStack.Screen name="privacy-policy" />
+      <TransitionStack.Screen name="feedback" />
+    </TransitionStack>
   );
 }

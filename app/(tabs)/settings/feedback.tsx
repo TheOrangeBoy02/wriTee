@@ -12,6 +12,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import Transition from 'react-native-screen-transitions';
 import { useRouter } from 'expo-router';
 import Header from '@/components/Header';
 import Colors from '@/constants/Colors';
@@ -165,18 +166,21 @@ export default function FeedbackScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={Colors.primary.main} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <Transition.View style={{ flex: 1 }}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={Colors.primary.main} />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </Transition.View>
     );
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <Transition.View style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <Header title="Feedback" showBackButton onBackPress={() => router.navigate('/(tabs)/settings')} />
 
       <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
@@ -248,7 +252,8 @@ export default function FeedbackScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </Transition.View>
   );
 }
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import Transition from 'react-native-screen-transitions';
 import { useRouter } from 'expo-router';
 import { Trash2, AlertTriangle } from 'lucide-react-native';
 import Header from '@/components/Header';
@@ -95,15 +96,18 @@ export default function ProfileSettingsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={Colors.primary.main} />
-        <Text style={{ marginTop: 16, fontFamily: 'Inter-Medium', fontSize: 16, color: Colors.text.dark }}>Loading...</Text>
-      </View>
+      <Transition.View style={{ flex: 1 }}>
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={Colors.primary.main} />
+          <Text style={{ marginTop: 16, fontFamily: 'Inter-Medium', fontSize: 16, color: Colors.text.dark }}>Loading...</Text>
+        </View>
+      </Transition.View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Transition.View style={{ flex: 1 }}>
+      <View style={styles.container}>
       <Header title="Edit Profile" showBackButton onBackPress={() => router.navigate('/(tabs)/settings')} />
       <View style={styles.form}>
         <Text style={styles.label}>Display Name</Text>
@@ -201,7 +205,8 @@ export default function ProfileSettingsScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+      </View>
+    </Transition.View>
   );
 }
 

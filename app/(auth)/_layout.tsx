@@ -1,17 +1,12 @@
-import { Stack } from 'expo-router';
-import Colors from '@/constants/Colors';
+import { TransitionStack } from '@/navigation/TransitionStack';
+import { FadeTransition } from '@/navigation/transitions';
 
 export default function AuthLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: Colors.background.main },
-      }}
-    >
-      <Stack.Screen name="login" />
-      <Stack.Screen name="signup" />
-      <Stack.Screen name="WelcomeScreen" />
-  </Stack>
+    <TransitionStack screenOptions={FadeTransition}>
+      <TransitionStack.Screen name="login" />
+      <TransitionStack.Screen name="signup" />
+      <TransitionStack.Screen name="WelcomeScreen" />
+    </TransitionStack>
   );
 }

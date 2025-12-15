@@ -1,16 +1,17 @@
 // WelcomeScreen.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  FlatList, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
   Dimensions,
   ListRenderItem,
-  Animated 
+  Animated
 } from 'react-native';
+import Transition from 'react-native-screen-transitions';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LottieView from 'lottie-react-native';
@@ -204,7 +205,8 @@ export default function WelcomeScreen() {
   const isLastSlide = currentIndex === ONBOARDING_DATA.length - 1;
 
   return (
-    <View style={styles.container}>
+    <Transition.View style={{ flex: 1 }}>
+      <View style={styles.container}>
 
       {/* STEP 11: Slides carousel */}
       <FlatList
@@ -248,7 +250,8 @@ export default function WelcomeScreen() {
           </TouchableOpacity>
         </Animated.View>
       </View>
-    </View>
+      </View>
+    </Transition.View>
   );
 }
 

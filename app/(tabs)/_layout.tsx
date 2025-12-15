@@ -26,6 +26,7 @@ export default function TabLayout() {
         tabBarStyle: tabBarStyle,
         tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
+        animation: 'fade',
       }}>
       <Tabs.Screen
         name="index"

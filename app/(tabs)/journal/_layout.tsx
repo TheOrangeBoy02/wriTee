@@ -1,10 +1,14 @@
-import { Stack } from 'expo-router';
+import { TransitionStack } from '@/navigation/TransitionStack';
+import { JournalDetailTransition } from '@/navigation/transitions';
 
 export default function JournalLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="[id]" />
-    </Stack>
+    <TransitionStack>
+      <TransitionStack.Screen name="index" />
+      <TransitionStack.Screen
+        name="[id]"
+        options={JournalDetailTransition}
+      />
+    </TransitionStack>
   );
 }

@@ -9,6 +9,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withTiming, runOnJS } from 
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Colors from '@/constants/Colors';
 import JournalEntryItem from '@/components/JournalEntryItem';
+import JournalEntrySkeleton from '@/components/JournalEntrySkeleton';
 import { getJournalEntries, deleteJournalEntry, togglePinJournalEntry } from '@/services/journal';
 import { getShelves } from '@/services/shelf';
 import { JournalEntry, Shelf } from '@/types';
@@ -380,9 +381,7 @@ const handleDeleteEntry = async (id: string) => {
       )}
 
       {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary.main} />
-        </View>
+        <JournalEntrySkeleton count={5} />
       ) : (
         <FlatList
           data={filteredEntries}

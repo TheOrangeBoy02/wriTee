@@ -1,6 +1,7 @@
 // app/(tabs)/journal/[id].tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, ScrollView, Image, GestureResponderEvent } from 'react-native';
+import Transition from 'react-native-screen-transitions';
 import UnsavedChangesDialog from '@/components/UnsavedChangesDialog';
 import ShelfSelector from '@/components/ShelfSelector';
 import { useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
@@ -204,7 +205,8 @@ export default function JournalEntryScreen() {
   const isViewMode = !isEditing;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
+    <Transition.View style={{ flex: 1 }}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton}           onPress={() => {
@@ -350,7 +352,8 @@ export default function JournalEntryScreen() {
           setPendingNavigation(null);
         }}
       />
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </Transition.View>
   );
 }
 

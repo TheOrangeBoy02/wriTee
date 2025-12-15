@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import Transition from 'react-native-screen-transitions';
 import { useRouter } from 'expo-router';
 import Header from '@/components/Header';
 import { useTheme } from '@/context/ThemeContext';
@@ -8,7 +9,8 @@ export default function PrivacyPolicyScreen() {
   const router = useRouter();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background.main }]}>
+    <Transition.View style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: colors.background.main }]}>
       <Header title="Privacy Policy" showBackButton onBackPress={() => router.navigate('/(tabs)/settings')} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
@@ -46,7 +48,8 @@ export default function PrivacyPolicyScreen() {
           For questions or requests about your data, contact us at writee@tamandakanjaye.com
         </Text>
       </ScrollView>
-    </View>
+      </View>
+    </Transition.View>
   );
 }
 

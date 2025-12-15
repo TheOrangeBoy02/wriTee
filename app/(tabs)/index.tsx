@@ -166,38 +166,40 @@ export default function HomeScreen() {
           {recentEntries.length === 0 ? (
             <Text style={{ color: Colors.text.medium, marginBottom: 8 }}>No recent entries found.</Text>
           ) : (
-            recentEntries.map(entry => (
-              <MinimalRecentEntry
-                key={entry.id}
-                entry={entry}
-                onPress={() => router.push(`/journal/${entry.id}`)}
-              />
-            ))
+            <>
+              {recentEntries.map(entry => (
+                <MinimalRecentEntry
+                  key={entry.id}
+                  entry={entry}
+                  onPress={() => router.push(`/journal/${entry.id}`)}
+                />
+              ))}
+              {/* View All Entries button */}
+              <TouchableOpacity 
+                style={{
+                  backgroundColor: Colors.background.main,
+                  borderWidth: 1,
+                  borderColor: Colors.primary.main,
+                  paddingVertical: 14,
+                  paddingHorizontal: 24,
+                  marginTop: 16,
+                  borderRadius: 30,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={() => router.push('/journal')}
+              >
+                <BookOpen size={24} color="#af1dbf" />
+                <Text style={{
+                  fontFamily: 'Inter-Bold',
+                  fontSize: 18,
+                  marginLeft: 12,
+                  color: Colors.primary.main,
+                }}>View All Entries</Text>
+              </TouchableOpacity>
+            </>
           )}
-          {/* View All Entries button */}
-          <TouchableOpacity 
-            style={{
-              backgroundColor: Colors.background.main,
-              borderWidth: 1,
-              borderColor: Colors.primary.main,
-              paddingVertical: 14,
-              paddingHorizontal: 24,
-              marginTop: 16,
-              borderRadius: 30,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onPress={() => router.push('/journal')}
-          >
-            <BookOpen size={24} color="#af1dbf" />
-            <Text style={{
-              fontFamily: 'Inter-Bold',
-              fontSize: 18,
-              marginLeft: 12,
-              color: Colors.primary.main,
-            }}>View All Entries</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

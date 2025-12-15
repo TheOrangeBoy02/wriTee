@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LogOut, Bell, Moon, User, Clock, Trash2, Shield, MessageCircle } from 'lucide-react-native';
+import { LogOut, Bell, Moon, User, Clock, Shield, MessageCircle } from 'lucide-react-native';
 import Header from '@/components/Header';
 import TimePickerModal from '@/components/TimePickerModal';
 import { useTheme } from '@/context/ThemeContext';
@@ -112,28 +112,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await authService.deleteAccount();
-              router.replace('/login');
-            } catch (error) {
-              console.error('Error deleting account:', error);
-            }
-          }
-        },
-      ]
-    );
-  };
-
   const handleTimePickerOpen = () => {
     setShowTimePicker(true);
   };
@@ -169,20 +147,16 @@ export default function SettingsScreen() {
     setShowTimePicker(false);
   };
 
-  const handleProfileSettings = () => {
-    router.push('/(tabs)/profile-settings');
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background.main }]}>
       <Header title="Settings" />
-      
+
       <ScrollView style={styles.scrollView}>
         <View style={styles.sectionContainer}>
           <Text style={[styles.sectionTitle, { color: colors.text.dark }]}>Profile</Text>
           <TouchableOpacity
             style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}
-            onPress={handleProfileSettings}
+            onPress={() => router.push('/(tabs)/settings/profile')}
           >
             <View style={styles.settingLeft}>
               <User size={20} color={colors.text.dark} />
@@ -275,7 +249,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}
-            onPress={() => router.push('/(tabs)/privacy-policy')}
+            onPress={() => router.push('/(tabs)/settings/privacy-policy')}
           >
             <View style={styles.settingLeft}>
               <Shield size={20} color={colors.text.dark} />
@@ -285,7 +259,7 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}
-            onPress={() => router.push('/(tabs)/feedback')}
+            onPress={() => router.push('/(tabs)/settings/feedback')}
           >
             <View style={styles.settingLeft}>
               <MessageCircle size={20} color={colors.text.dark} />
@@ -304,16 +278,6 @@ export default function SettingsScreen() {
             <View style={styles.settingLeft}>
               <LogOut size={20} color={colors.text.dark} />
               <Text style={[styles.settingText, { color: colors.text.dark }]}>Logout</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.settingItem, { borderBottomColor: colors.neutral.border }]}
-            onPress={handleDeleteAccount}
-          >
-            <View style={styles.settingLeft}>
-              <Trash2 size={20} color={colors.error.main} />
-              <Text style={[styles.settingText, { color: colors.error.main }]}>Delete Account</Text>
             </View>
           </TouchableOpacity>
         </View>

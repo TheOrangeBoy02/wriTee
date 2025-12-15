@@ -1,13 +1,15 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import Header from '@/components/Header';
 import { useTheme } from '@/context/ThemeContext';
 
 export default function PrivacyPolicyScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <Header title="Privacy Policy" />
+      <Header title="Privacy Policy" showBackButton onBackPress={() => router.navigate('/(tabs)/settings')} />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
         <Text style={[styles.introText, { color: colors.text.dark }]}>

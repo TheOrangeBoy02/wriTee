@@ -1,6 +1,6 @@
 //app/(tabs)/journal/index.tsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, TextInput, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -28,28 +28,53 @@ export default function JournalScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
 
+  // Track when we last loaded to avoid excessive refetching
+  const lastLoadTime = useRef<number>(0);
+  const STALE_THRESHOLD = 30000; // 30 seconds - reload if data is older than this
+
 const handlePinEntry = async (id: string) => {
+  // Optimistic update - update UI immediately
+  const entryIndex = entries.findIndex(e => e.id === id);
+  if (entryIndex === -1) return;
+
+  const originalEntries = [...entries];
+  const updatedEntries = [...entries];
+  updatedEntries[entryIndex] = {
+    ...updatedEntries[entryIndex],
+    pinned: !updatedEntries[entryIndex].pinned
+  };
+
+  // Sort entries: pinned first, then by date
+  updatedEntries.sort((a, b) => {
+    if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+    return new Date(b.entry_date).getTime() - new Date(a.entry_date).getTime();
+  });
+
+  setEntries(updatedEntries);
+
   try {
     await togglePinJournalEntry(id);
-    // Refresh the entries list after pinning
-    loadEntries();
   } catch (error) {
     console.error('Error pinning entry:', error);
-    // TODO: Show error toast
+    // Revert on error
+    setEntries(originalEntries);
   }
 };
 
 
 const handleDeleteEntry = async (id: string) => {
-    try {
-      await deleteJournalEntry(id);
-      // Refresh the entries list after deletion
-      await loadEntries();
-    } catch (error) {
-      console.error('Error deleting entry:', error);
-      // TODO: Show error toast
-    }
-  };
+  // Optimistic update - remove from UI immediately
+  const originalEntries = [...entries];
+  setEntries(entries.filter(e => e.id !== id));
+
+  try {
+    await deleteJournalEntry(id);
+  } catch (error) {
+    console.error('Error deleting entry:', error);
+    // Revert on error
+    setEntries(originalEntries);
+  }
+};
 
   useEffect(() => {
     loadEntries();
@@ -58,15 +83,16 @@ const handleDeleteEntry = async (id: string) => {
   }, []);
 
   useEffect(() => {
-    loadEntries();
+    loadEntries(true); // Force reload when shelf filter changes
   }, [selectedShelfIds]);
 
   useFocusEffect(
     React.useCallback(() => {
+      // Only reload if data is stale - loadEntries handles the check
       loadEntries();
       loadShelves();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [selectedShelfIds])
   );
 
   const loadShelves = async () => {
@@ -78,7 +104,14 @@ const handleDeleteEntry = async (id: string) => {
     }
   };
 
-  const loadEntries = async () => {
+  const loadEntries = async (force = false) => {
+    // Skip loading if data is fresh (unless forced)
+    const now = Date.now();
+    if (!force && entries.length > 0 && now - lastLoadTime.current < STALE_THRESHOLD) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       // If multiple shelves selected, load all and filter client-side
@@ -95,6 +128,8 @@ const handleDeleteEntry = async (id: string) => {
       } else {
         setEntries(journalEntries);
       }
+
+      lastLoadTime.current = now;
     } catch (error) {
       console.error('Error loading journal entries:', error);
     } finally {
@@ -136,7 +171,7 @@ const handleDeleteEntry = async (id: string) => {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await loadEntries();
+      await loadEntries(true); // Force reload on manual refresh
     } catch (error) {
       console.error('Error refreshing journal entries:', error);
     } finally {

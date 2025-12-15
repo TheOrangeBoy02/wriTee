@@ -17,7 +17,8 @@ export default {
       buildNumber: "1.0.0",
       infoPlist: {
         UIBackgroundModes: ["remote-notification"]
-      }
+      },
+      googleServicesFile: "./ios/GoogleService-Info.plist"
     },
     android: {
       package: "com.writee.app",

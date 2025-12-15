@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Mail, Lock, CircleAlert as AlertCircle, LogIn, Eye, EyeOff } from 'lucide-react-native';
+import * as WebBrowser from 'expo-web-browser';
 import Colors from '@/constants/Colors';
 import { authService } from '@/services/auth';
 import { signInSchema, validateField } from '@/utils/validation';
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -52,11 +54,11 @@ export default function LoginScreen() {
 
     try {
       await authService.signIn(email, password);
-      
+
       // Don't manually navigate here - let RootLayout handle it
       // The useEffect above will detect the auth state change
       // and RootLayout will automatically navigate to /(tabs)
-      
+
     } catch (err: any) {
       if (err.message?.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please check your credentials.');
@@ -68,6 +70,85 @@ export default function LoginScreen() {
         setError('Unable to sign in. Please try again.');
         console.error('Login error:', err);
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await authService.signInWithGoogle();
+
+      if (result?.url) {
+        console.log('🌐 Opening OAuth URL in browser...');
+
+        // Open the OAuth URL in a browser
+        const browserResult = await WebBrowser.openAuthSessionAsync(
+          result.url,
+          'writee://'
+        );
+
+        console.log('🌐 Browser result type:', browserResult.type);
+        console.log('🌐 Browser result:', JSON.stringify(browserResult, null, 2));
+
+        if (browserResult.type === 'success') {
+          console.log('✅ Browser OAuth flow completed');
+
+          // Check if we got a URL back with the tokens
+          if ('url' in browserResult && browserResult.url) {
+            console.log('🔗 Got callback URL:', browserResult.url);
+            // The deep link handler should process this, but let's also handle it here
+            // in case the deep link handler doesn't catch it
+            const url = browserResult.url;
+            const hashParams = url.split('#')[1];
+
+            if (hashParams) {
+              console.log('🔑 Extracting tokens from callback URL');
+              const params = new URLSearchParams(hashParams);
+              const accessToken = params.get('access_token');
+              const refreshToken = params.get('refresh_token');
+
+              if (accessToken) {
+                console.log('✅ Found tokens, setting session...');
+                const { supabase } = await import('@/services/supabase');
+                const { data, error } = await supabase.auth.setSession({
+                  access_token: accessToken,
+                  refresh_token: refreshToken || '',
+                });
+
+                if (error) {
+                  console.error('❌ Error setting session:', error);
+                  setError('Failed to complete sign in. Please try again.');
+                } else {
+                  console.log('✅ Session set successfully');
+
+                  // Create profile if needed
+                  if (data?.user) {
+                    await authService.handleOAuthCallback(
+                      data.user.id,
+                      data.user.email!,
+                      data.user.user_metadata?.full_name || data.user.user_metadata?.name
+                    );
+                  }
+                  // Auth state listener will handle navigation
+                }
+              }
+            }
+          } else {
+            console.log('⚠️ No callback URL in browser result, waiting for deep link...');
+          }
+        } else if (browserResult.type === 'cancel') {
+          setError('Sign in was cancelled. Please try again.');
+        } else if (browserResult.type === 'dismiss') {
+          console.log('ℹ️ Browser was dismissed');
+        }
+      }
+    } catch (err: any) {
+      console.error('❌ Google sign in error:', err);
+      setError('Unable to sign in with Google. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -174,7 +255,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* Google Sign In Button */}
-          {/* <TouchableOpacity 
+          <TouchableOpacity 
             style={styles.googleButton}
             onPress={handleGoogleSignIn}
             disabled={isLoading}
@@ -185,10 +266,10 @@ export default function LoginScreen() {
               resizeMode="contain"
             />
             <Text style={styles.googleButtonText}>Sign In with Google</Text>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
 
-          {/* Debug buttons
-          <TouchableOpacity 
+          {/* Debug buttons */}
+          {/* <TouchableOpacity 
             style={{...styles.googleButton, backgroundColor: '#ff4444'}}
             onPress={async () => {
               await AsyncStorage.removeItem('hasLaunchedBefore');
@@ -361,6 +442,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     fontSize: 14,
     color: Colors.primary.main,
+    textDecorationLine: 'underline',
   },
   passwordToggle: {
     padding: 8,

@@ -65,19 +65,75 @@ export default function RootLayout() {
   useEffect(() => {
     const { unsubscribe } = authService.onAuthStateChange(async (user) => {
       console.log('Auth state changed:', !!user);
-      setIsAuthenticated(!!user);
-      setIsInitializing(false);
 
-      // Register for push notifications when user logs in
+      // CRITICAL: Validate profile exists
       if (user) {
         try {
-          console.log('🔔 User logged in, setting up push notifications...');
-          const { setupPushNotifications } = await import('@/services/notifications');
-          const token = await setupPushNotifications();
-          console.log('🔔 Push setup complete, token:', token);
+          // Check if user has a valid profile
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (error) {
+            console.error('Error checking profile:', error);
+            await supabase.auth.signOut();
+            setIsAuthenticated(false);
+            setIsInitializing(false);
+            return;
+          }
+
+          if (!profile) {
+            // User has valid session but no profile (account was deleted)
+            console.warn('Valid session but no profile found - signing out');
+
+            // Force complete logout
+            await supabase.auth.signOut();
+
+            // Clear AsyncStorage
+            try {
+              const keys = await AsyncStorage.getAllKeys();
+              const supabaseKeys = keys.filter(key =>
+                key.includes('supabase') ||
+                key.includes('sb-') ||
+                key.includes('auth')
+              );
+              if (supabaseKeys.length > 0) {
+                await AsyncStorage.multiRemove(supabaseKeys);
+              }
+            } catch (e) {
+              console.error('Error clearing AsyncStorage:', e);
+            }
+
+            setIsAuthenticated(false);
+            setIsInitializing(false);
+            return;
+          }
+
+          // Valid user with valid profile
+          setIsAuthenticated(true);
+          setIsInitializing(false);
+
+          // Register for push notifications
+          try {
+            console.log('🔔 User logged in, setting up push notifications...');
+            const { setupPushNotifications } = await import('@/services/notifications');
+            const token = await setupPushNotifications();
+            console.log('🔔 Push setup complete, token:', token);
+          } catch (error) {
+            console.error('🔔 Failed to setup push notifications:', error);
+          }
         } catch (error) {
-          console.error('🔔 Failed to setup push notifications:', error);
+          console.error('Error validating user profile:', error);
+          await supabase.auth.signOut();
+          setIsAuthenticated(false);
+          setIsInitializing(false);
         }
+      } else {
+        // No user session
+        setIsAuthenticated(false);
+        setIsInitializing(false);
       }
     });
     return unsubscribe;
@@ -88,42 +144,91 @@ export default function RootLayout() {
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url;
       console.log('🔗 Deep link received:', url);
+      console.log('🔗 Full URL:', JSON.stringify(url));
 
       // Parse the URL
-      const { path } = Linking.parse(url);
+      const { path, queryParams } = Linking.parse(url);
+      console.log('🔗 Parsed path:', path);
+      console.log('🔗 Query params:', queryParams);
 
-      // Check if it's a password reset link
-      // Handle both exp:// (Expo Go) and writee:// (production) schemes
-      if (path === 'reset-password' ||
-          path === '--/reset-password' ||  // Expo Go format
-          url.includes('type=recovery')) {
-        console.log('🔐 Password reset link detected');
+      // Extract hash fragments if they exist (for Supabase auth)
+      const hashParams = url.split('#')[1];
+      console.log('🔗 Hash params:', hashParams);
 
-        // Extract hash fragments if they exist (for Supabase auth)
-        const hashParams = url.split('#')[1];
-        if (hashParams) {
-          // Create a URL object to parse hash parameters
-          const params = new URLSearchParams(hashParams);
-          const accessToken = params.get('access_token');
-          const refreshToken = params.get('refresh_token');
-          const type = params.get('type');
+      if (hashParams) {
+        // Create a URL object to parse hash parameters
+        const params = new URLSearchParams(hashParams);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const type = params.get('type');
 
-          if (accessToken && type === 'recovery') {
-            console.log('✅ Setting recovery session from deep link');
+        console.log('🔗 Has access_token:', !!accessToken);
+        console.log('🔗 Has refresh_token:', !!refreshToken);
+        console.log('🔗 Type:', type);
 
+        // Handle OAuth callback (Google Sign In)
+        if (accessToken && !type) {
+          console.log('🔐 OAuth callback detected, setting session');
+
+          try {
             // Set the session in Supabase
-            await supabase.auth.setSession({
+            const { data, error } = await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || '',
             });
 
-            // Navigate to reset password screen
-            router.push('/(auth)/reset-password');
+            if (error) {
+              console.error('❌ Error setting OAuth session:', error);
+            } else {
+              console.log('✅ OAuth session set successfully');
+              console.log('✅ Session user:', data?.user?.email);
+
+              // Create profile if needed
+              if (data?.user) {
+                try {
+                  await authService.handleOAuthCallback(
+                    data.user.id,
+                    data.user.email!,
+                    data.user.user_metadata?.full_name || data.user.user_metadata?.name
+                  );
+                } catch (profileError) {
+                  console.error('❌ Error creating OAuth profile:', profileError);
+                }
+              }
+
+              // The auth state change listener will handle navigation
+            }
+          } catch (error) {
+            console.error('❌ Error processing OAuth callback:', error);
           }
-        } else {
-          // Just navigate if no hash params (session might already be set)
-          router.push('/(auth)/reset-password');
+          return;
         }
+
+        // Handle password reset
+        if (accessToken && type === 'recovery') {
+          console.log('🔐 Password reset link detected');
+          console.log('✅ Setting recovery session from deep link');
+
+          // Set the session in Supabase
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+
+          // Navigate to reset password screen
+          router.push('/(auth)/reset-password');
+          return;
+        }
+      }
+
+      // Check if it's a password reset link (without hash params)
+      // Handle both exp:// (Expo Go) and writee:// (production) schemes
+      if (path === 'reset-password' ||
+          path === '--/reset-password' ||  // Expo Go format
+          url.includes('type=recovery')) {
+        console.log('🔐 Password reset link detected (no hash params)');
+        // Just navigate if no hash params (session might already be set)
+        router.push('/(auth)/reset-password');
       }
     };
 

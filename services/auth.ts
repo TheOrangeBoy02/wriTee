@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { UserProfile } from '@/types';
 import { createUserProfile } from '@/utils/common';
+import { clearJournalCache } from './journal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const authService = {
   async signUp(email: string, password: string, displayName?: string, phoneNumber?: string) {
@@ -62,6 +64,7 @@ export const authService = {
 
   async signInWithGoogle() {
     try {
+      console.log('🔐 Starting Google OAuth flow...');
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -73,36 +76,19 @@ export const authService = {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ OAuth error:', error);
+        throw error;
+      }
 
       if (!data?.url) {
         throw new Error('No OAuth URL returned');
       }
 
-      // After successful OAuth, check session
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (sessionData?.session?.user) {
-        const user = sessionData.session.user;
-        
-        // Check if profile exists
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .single();
+      console.log('✅ OAuth URL generated:', data.url);
 
-        if (!existingProfile) {
-          // Create new profile using shared utility
-          await createUserProfile(
-            supabase,
-            user.id,
-            user.email!,
-            user.user_metadata.full_name || user.email?.split('@')[0],
-            null
-          );
-        }
-      }
+      // NOTE: Don't check session here - it will be set by the deep link handler
+      // after the OAuth flow completes and the app receives the callback URL
 
       return data;
     } catch (error) {
@@ -111,7 +97,42 @@ export const authService = {
     }
   },
 
+  // Helper method to handle OAuth callback and create profile if needed
+  async handleOAuthCallback(userId: string, email: string, fullName?: string) {
+    try {
+      console.log('🔐 Handling OAuth callback for user:', email);
+
+      // Check if profile exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!existingProfile) {
+        console.log('📝 Creating new profile for OAuth user');
+        // Create new profile using shared utility
+        await createUserProfile(
+          supabase,
+          userId,
+          email,
+          fullName || email.split('@')[0],
+          null
+        );
+        console.log('✅ Profile created successfully');
+      } else {
+        console.log('✅ Profile already exists');
+      }
+    } catch (error) {
+      console.error('❌ Error handling OAuth callback:', error);
+      throw error;
+    }
+  },
+
   async signOut() {
+    // Clear all caches before signing out to prevent data leakage
+    clearJournalCache();
+
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   },
@@ -220,19 +241,37 @@ export const authService = {
     const user = await this.getCurrentUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Delete profile first
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', user.id);
+    // Clear all caches before deleting
+    clearJournalCache();
 
-    if (profileError) throw profileError;
+    // Call Edge Function to delete both profile AND auth user
+    const { data: session } = await supabase.auth.getSession();
+    const { error } = await supabase.functions.invoke('delete-account', {
+      headers: {
+        Authorization: `Bearer ${session.session?.access_token}`,
+      },
+    });
 
-    // Sign out the user (auth user deletion should be handled server-side)
+    if (error) throw error;
+
+    // Force complete session clearing
     await supabase.auth.signOut();
-    
-    // Note: Actual user deletion should be implemented via Edge Functions
-    // for security. This client-side implementation only removes profile data.
+
+    // Manually clear ALL Supabase-related keys from AsyncStorage
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const supabaseKeys = keys.filter(key =>
+        key.includes('supabase') ||
+        key.includes('sb-') ||
+        key.includes('auth')
+      );
+      if (supabaseKeys.length > 0) {
+        await AsyncStorage.multiRemove(supabaseKeys);
+      }
+    } catch (error) {
+      console.error('Error clearing AsyncStorage:', error);
+      // Don't throw - we still want to proceed
+    }
   },
 
   onAuthStateChange(callback: (user: any) => void) {

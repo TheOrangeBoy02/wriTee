@@ -145,8 +145,8 @@ export default function FeedbackScreen() {
                 subject: '',
                 message: '',
               });
-              // Navigate back
-              router.back();
+              // Navigate back to settings
+              router.navigate('/(tabs)/settings');
             }
           }
         ]
@@ -177,7 +177,7 @@ export default function FeedbackScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <Header title="Feedback" />
+      <Header title="Feedback" showBackButton onBackPress={() => router.navigate('/(tabs)/settings')} />
 
       <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>

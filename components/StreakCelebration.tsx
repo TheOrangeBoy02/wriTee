@@ -243,7 +243,7 @@ export default function StreakCelebration({
             {/* New record badge */}
             {isNewRecord && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>🏆 New Record!</Text>
+                <Text style={styles.badgeText}>Best Streak!</Text>
               </View>
             )}
           </View>

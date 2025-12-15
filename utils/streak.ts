@@ -14,14 +14,16 @@ const getLocalDateString = (date: Date = new Date()): string => {
 
 /**
  * Calculate current and best writing streaks from journal entries
+ * @param providedEntryDates - Optional pre-fetched entry dates to avoid duplicate API calls
  */
-export const calculateStreaks = async (): Promise<{ 
-  currentStreak: number; 
+export const calculateStreaks = async (providedEntryDates?: string[]): Promise<{
+  currentStreak: number;
   bestStreak: number;
 }> => {
   try {
-    const entryDates = await getJournalEntryDates(true);
-    
+    // Use provided dates or fetch them
+    const entryDates = providedEntryDates ?? await getJournalEntryDates(true);
+
     if (entryDates.length === 0) {
       return { currentStreak: 0, bestStreak: 0 };
     }
@@ -132,17 +134,17 @@ export const updateStreakAfterEntry = async (entryDate?: string): Promise<{
     // Get user ID
     const userId = await getCurrentUserId();
 
-    // Get all entry dates to check if this is first entry today
+    // Get all entry dates once and reuse for both checks and calculation
     const entryDates = await getJournalEntryDates(true);
     const today = getLocalDateString();
-    const dateToUpdate = entryDate || today;
+    const dateToUpdate = entryDate?.split('T')[0] || today;
 
     // Check if this is the first entry for today
     const todayEntryCount = entryDates.filter(date => date === today).length;
     const isFirstEntryToday = todayEntryCount === 1 && dateToUpdate === today;
 
-    // Calculate streaks from all entries
-    const { currentStreak, bestStreak } = await calculateStreaks();
+    // Calculate streaks from all entries - pass the dates we already have
+    const { currentStreak, bestStreak } = await calculateStreaks(entryDates);
 
     console.log('🔥 Calculated values:', {
       currentStreak,

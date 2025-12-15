@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "762011985779",
+    "project_id": "writee-journal",
+    "storage_bucket": "writee-journal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:762011985779:android:d26adff370ad9c72f38706",
+        "android_client_info": {
+          "package_name": "com.writee.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZZLiGd_32LDrZXCuC2nuynp8-NWlTQxU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

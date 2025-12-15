@@ -75,16 +75,33 @@ export const scheduleDailyReminder = async (time: string): Promise<string | null
     // Cancel all existing scheduled notifications first
     await Notifications.cancelAllScheduledNotificationsAsync();
 
+    // Ensure channel exists on Android before scheduling
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('journal-reminders', {
+        name: 'Journal Reminders',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#af1dbf',
+        sound: 'default',
+      });
+    }
+
     // Parse the time
     const [hours, minutes] = time.split(':').map(Number);
 
-    // Create notification trigger for daily at specified time
-    const trigger: Notifications.CalendarTriggerInput = {
-      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
-      hour: hours,
-      minute: minutes,
-      repeats: true,
-    };
+    // Create notification trigger - use DAILY for Android, CALENDAR for iOS
+    const trigger = Platform.OS === 'android'
+      ? {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: hours,
+          minute: minutes,
+        } as Notifications.DailyTriggerInput
+      : {
+          type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+          hour: hours,
+          minute: minutes,
+          repeats: true,
+        } as Notifications.CalendarTriggerInput;
 
     // Schedule the notification
     const notificationId = await Notifications.scheduleNotificationAsync({
@@ -93,6 +110,7 @@ export const scheduleDailyReminder = async (time: string): Promise<string | null
         body: 'Take a moment to WriTeeeeeeee.',
         data: { type: 'journal-reminder' },
         sound: 'default',
+        ...(Platform.OS === 'android' && { channelId: 'journal-reminders' }),
       },
       trigger,
     });
@@ -134,11 +152,23 @@ export const getScheduledNotifications = async (): Promise<Notifications.Notific
  */
 export const sendTestNotification = async (): Promise<void> => {
   try {
+    // Ensure channel exists on Android
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('journal-reminders', {
+        name: 'Journal Reminders',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#af1dbf',
+        sound: 'default',
+      });
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: '✨ Test Notification',
         body: 'Your journal reminders are working!',
         data: { type: 'test' },
+        ...(Platform.OS === 'android' && { channelId: 'journal-reminders' }),
       },
       trigger: null, // Send immediately
     });

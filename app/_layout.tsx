@@ -71,10 +71,12 @@ export default function RootLayout() {
       // Register for push notifications when user logs in
       if (user) {
         try {
+          console.log('🔔 User logged in, setting up push notifications...');
           const { setupPushNotifications } = await import('@/services/notifications');
-          await setupPushNotifications();
+          const token = await setupPushNotifications();
+          console.log('🔔 Push setup complete, token:', token);
         } catch (error) {
-          console.error('Failed to setup push notifications:', error);
+          console.error('🔔 Failed to setup push notifications:', error);
         }
       }
     });

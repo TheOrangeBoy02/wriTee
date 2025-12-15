@@ -186,7 +186,7 @@ export default function SettingsScreen() {
           >
             <View style={styles.settingLeft}>
               <User size={20} color={colors.text.dark} />
-              <Text style={[styles.settingText, { color: colors.text.dark }]}>Edit Profile</Text>
+              <Text style={[styles.settingText, { color: colors.text.dark }]}>Profile Settings</Text>
             </View>
             <Text style={[styles.actionText, { color: colors.primary.main }]}>Edit</Text>
           </TouchableOpacity>

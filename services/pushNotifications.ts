@@ -11,11 +11,8 @@ import { supabase } from './supabase';
  */
 export const registerForPushNotifications = async (): Promise<string | null> => {
   try {
-    // Check if we're on a physical device or Expo Go
-    if (!Device.isDevice && !__DEV__) {
-      console.warn('Push notifications only work on physical devices in production');
-      return null;
-    }
+    console.log('🔔 registerForPushNotifications called');
+    console.log('🔔 Requesting permissions...');
 
     // Get existing permissions
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -28,37 +25,43 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
     }
 
     if (finalStatus !== 'granted') {
-      console.log('Push notification permission not granted');
+      console.log('🔔 Push notification permission not granted, status:', finalStatus);
       return null;
     }
 
+    console.log('🔔 Permission granted! Getting push token...');
+
     // Get the Expo push token
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    console.log('🔔 Project ID:', projectId);
 
     if (!projectId) {
       throw new Error('EAS Project ID not found in app.config.js');
     }
 
+    console.log('🔔 Calling getExpoPushTokenAsync...');
+
     const tokenData = await Notifications.getExpoPushTokenAsync({
       projectId,
     });
-
     const token = tokenData.data;
-    console.log('Expo Push Token:', token);
+    console.log('🔔 Expo Push Token:', token);
 
     // Configure Android notification channel
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
+      await Notifications.setNotificationChannelAsync('journal-reminders', {
+        name: 'Journal Reminders',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#af1dbf',
+        sound: 'default',
       });
     }
 
     return token;
-  } catch (error) {
-    console.error('Error registering for push notifications:', error);
+  } catch (error: any) {
+    console.error('🔔 Error registering for push notifications:', error?.message || error);
+    console.error('🔔 Full error:', JSON.stringify(error, null, 2));
     return null;
   }
 };
@@ -212,14 +215,6 @@ export const canSendPushNotifications = async (): Promise<{
   available: boolean;
   reason?: string;
 }> => {
-  // Check if physical device
-  if (!Device.isDevice && !__DEV__) {
-    return {
-      available: false,
-      reason: 'Push notifications only work on physical devices',
-    };
-  }
-
   // Check permissions
   const { status } = await Notifications.getPermissionsAsync();
   if (status !== 'granted') {

@@ -21,7 +21,8 @@ export default {
     },
     android: {
       package: "com.writee.app",
-      versionCode: 6
+      versionCode: 6,
+      googleServicesFile: "./android/app/google-services.json"
     },
     web: {
       bundler: "metro",

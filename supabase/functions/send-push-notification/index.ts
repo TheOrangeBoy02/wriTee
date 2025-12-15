@@ -100,7 +100,7 @@ serve(async (req) => {
       data,
       sound,
       badge,
-      channelId: token.device_type === 'android' ? 'default' : undefined,
+      channelId: token.device_type === 'android' ? 'journal-reminders' : undefined,
     }));
 
     console.log(`Sending ${messages.length} push notifications to user ${userId}`);

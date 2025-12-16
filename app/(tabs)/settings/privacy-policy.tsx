@@ -45,7 +45,7 @@ export default function PrivacyPolicyScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.text.dark }]}>Contact</Text>
         <Text style={[styles.bodyText, { color: colors.text.medium }]}>
-          For questions or requests about your data, contact us at writee@tamandakanjaye.com
+          For questions or requests about your data, contact us at Writee@tkanjaye.com
         </Text>
       </ScrollView>
       </View>

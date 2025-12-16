@@ -7,6 +7,7 @@ import Animated, {
   useAnimatedStyle,
   withRepeat,
   withTiming,
+  withDelay,
   interpolate,
 } from 'react-native-reanimated';
 import Colors from '@/constants/Colors';
@@ -15,22 +16,25 @@ type JournalEntrySkeletonProps = {
   count?: number;
 };
 
-const SkeletonBox = ({ width, height, style }: { width: number | string; height: number; style?: any }) => {
+const SkeletonBox = ({ width, height, style, delay = 0 }: { width: number | string; height: number; style?: any; delay?: number }) => {
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
-    shimmer.value = withRepeat(
-      withTiming(1, { duration: 1500 }),
-      -1,
-      false
+    shimmer.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(1, { duration: 1200 }),
+        -1,
+        false
+      )
     );
-  }, []);
+  }, [delay]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       shimmer.value,
       [0, 0.5, 1],
-      [0.3, 0.5, 0.3]
+      [3.3, 0.7, 0.1]
     );
 
     return {
@@ -58,19 +62,19 @@ const SingleSkeleton = () => {
   return (
     <View style={styles.container}>
       {/* Title */}
-      <SkeletonBox width="60%" height={12} style={{ marginBottom: 8 }} />
+      <SkeletonBox width="60%" height={12} style={{ marginBottom: 8 }} delay={0} />
 
       {/* Date */}
-      <SkeletonBox width="30%" height={14} style={{ marginBottom: 12 }} />
+      <SkeletonBox width="30%" height={14} style={{ marginBottom: 12 }} delay={150} />
 
       {/* Excerpt - 3 lines */}
-      <SkeletonBox width="100%" height={14} style={{ marginBottom: 6 }} />
- 
+      <SkeletonBox width="100%" height={14} style={{ marginBottom: 6 }} delay={300} />
+
       {/* Shelf tags */}
       <View style={styles.shelvesContainer}>
-        <SkeletonBox width={8} height={8} style={{ borderRadius: 4 }} />
-        <SkeletonBox width={8} height={8} style={{ borderRadius: 4, marginLeft: 8 }} />
-        <SkeletonBox width={8} height={8} style={{ borderRadius: 4, marginLeft: 8 }} />
+        <SkeletonBox width={8} height={8} style={{ borderRadius: 4 }} delay={450} />
+        <SkeletonBox width={8} height={8} style={{ borderRadius: 4, marginLeft: 8 }} delay={550} />
+        <SkeletonBox width={8} height={8} style={{ borderRadius: 4, marginLeft: 8 }} delay={650} />
       </View>
     </View>
   );

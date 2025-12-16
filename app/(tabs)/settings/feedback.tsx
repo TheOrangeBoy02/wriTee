@@ -114,22 +114,11 @@ export default function FeedbackScreen() {
       const body = encodeURIComponent(
         `Name: ${form.name.trim()}\n\nMessage:\n${form.message.trim()}`
       );
-      const mailtoUrl = `mailto:writee@tamandakanjaye.com?subject=${subject}&body=${body}`;
+      const mailtoUrl = `mailto:Writee@tkanjaye.com?subject=${subject}&body=${body}`;
 
-      // Check if the device can open the mailto link
-      const canOpen = await Linking.canOpenURL(mailtoUrl);
-
-      if (!canOpen) {
-        Alert.alert(
-          'Error',
-          'Unable to open email app. Please ensure you have an email client configured on your device.',
-          [{ text: 'OK' }]
-        );
-        setSubmitting(false);
-        return;
-      }
-
-      // Open the email app
+      // Try to open the email app directly
+      // Note: On Android 11+, canOpenURL returns false for mailto even when email clients exist
+      // So we skip the check and handle the error if it fails
       await Linking.openURL(mailtoUrl);
 
       // Show success message and reset form
@@ -156,7 +145,7 @@ export default function FeedbackScreen() {
       console.error('Error opening email app:', error);
       Alert.alert(
         'Error',
-        'Failed to open email app. Please try again or email us directly at writee@tamandakanjaye.com',
+        'Unable to open email app. Please ensure you have an email client configured on your device.',
         [{ text: 'OK' }]
       );
     } finally {

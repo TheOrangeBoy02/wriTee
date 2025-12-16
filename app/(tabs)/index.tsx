@@ -12,6 +12,7 @@ import { getRandomPrompt } from '@/services/prompts';
 import { getUserStreaks, getUsername } from '@/services/user';
 import { getRecentJournalEntries } from '@/services/journal';
 import MinimalRecentEntry from '@/components/MinimalRecentEntry';
+import { supabase } from '@/services/supabase';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [recentEntries, setRecentEntries] = useState<import('@/types').JournalEntry[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const getGreeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -31,12 +33,49 @@ export default function HomeScreen() {
     return 'Good evening';
   }, []);
 
+  // Check authentication status
   useEffect(() => {
-    loadUserData();
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+
+        // If there's an error (like invalid refresh token), clear the session
+        if (error) {
+          console.log('Auth error detected, clearing session:', error.message);
+          await supabase.auth.signOut();
+          setIsAuthenticated(false);
+        } else {
+          setIsAuthenticated(!!user);
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Load data only when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadUserData();
+      loadRandomPrompt();
+      loadRecentEntries();
+    }
     setGreeting(getGreeting);
-    loadRandomPrompt();
-    loadRecentEntries();
-  }, [getGreeting]);
+  }, [getGreeting, isAuthenticated]);
 
   const loadUserData = async () => {
     try {
@@ -47,8 +86,6 @@ export default function HomeScreen() {
       setBestStreak(bestStreak);
     } catch (error) {
       console.error('Error loading user data:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

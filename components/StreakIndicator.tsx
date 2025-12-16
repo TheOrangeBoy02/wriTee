@@ -17,23 +17,11 @@ export default function StreakIndicator({ streak, label = "Current Streak" }: St
     };
   });
 
-  // Animate on mount
-  scale.value = withSpring(1.1, { damping: 4 });
-  setTimeout(() => {
-    scale.value = withSpring(1, { damping: 4 });
-  }, 500);
 
   return (
     <View style={styles.container}>
       <View style={styles.streakCard}>
         <View style={styles.streakHeader}>
-          <Animated.View style={animatedStyle}>
-            {label === "Best Streak" ? (
-              <Trophy size={24} color={Colors.accent.main} />
-            ) : (
-              <Flame size={24} color={Colors.accent.main} />
-            )}
-          </Animated.View>
           <Text style={styles.streakTitle}>{label}</Text>
         </View>
         
@@ -49,31 +37,29 @@ export default function StreakIndicator({ streak, label = "Current Streak" }: St
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
+    alignItems: 'center',
+    flex: 1,
+    // paddingHorizontal: 25,
   },
   streakCard: {
-    // backgroundColor: Colors.background.light,
-    borderRadius: 16,
-    padding: 20,
-    width: 160,
-    marginHorizontal: -20,
-    // borderWidth: 1,
+
     borderColor:Colors.primary.main,
   },
   streakHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+
   },
   streakTitle: {
+    
     fontFamily: 'Inter-SemiBold',
     fontSize: 16,
     color: Colors.text.dark,
-    marginLeft: 8,
+
   },
   streakContent: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginBottom: 6,
+
   },
   streakCount: {
     fontFamily: 'Playfair-Bold',

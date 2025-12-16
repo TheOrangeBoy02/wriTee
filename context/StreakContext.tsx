@@ -65,8 +65,15 @@ export const StreakProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Listen to auth state changes
   useEffect(() => {
     // Check initial auth state
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsAuthenticated(!!user);
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      // If there's an error (like invalid refresh token), clear the session
+      if (error) {
+        console.log('StreakContext: Auth error detected, clearing session:', error.message);
+        supabase.auth.signOut();
+        setIsAuthenticated(false);
+      } else {
+        setIsAuthenticated(!!user);
+      }
     });
 
     // Listen for auth changes

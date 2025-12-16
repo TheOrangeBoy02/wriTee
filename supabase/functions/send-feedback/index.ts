@@ -95,7 +95,7 @@ serve(async (req) => {
 
     // Get environment variables
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const feedbackEmail = Deno.env.get('FEEDBACK_EMAIL') || 'writee@tamandakanjaye.com';
+    const feedbackEmail = Deno.env.get('FEEDBACK_EMAIL') || 'Writee@tkanjaye.com';
 
     if (!resendApiKey) {
       console.error('RESEND_API_KEY not configured');

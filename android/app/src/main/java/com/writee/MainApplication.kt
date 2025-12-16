@@ -1,4 +1,4 @@
-package com.writee.app
+package com.writee
 
 import android.app.Application
 import android.content.res.Configuration

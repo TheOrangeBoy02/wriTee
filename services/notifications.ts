@@ -13,6 +13,123 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Array of notification messages to rotate through
+const NOTIFICATION_MESSAGES = [
+  {
+    title: '✍🏾 Time to journal!',
+    body: 'Take a moment to WriTeeeeeeee.',
+  },
+  {
+    title: '📖 Your journal awaits',
+    body: 'What\'s on your mind today?',
+  },
+  {
+    title: '💭 Capture your thoughts',
+    body: 'A few minutes of reflection can make all the difference.',
+  },
+  {
+    title: '✨ Moment of reflection',
+    body: 'Document your day and preserve your memories.',
+  },
+  {
+    title: '🌟 Time to WriTeee',
+    body: 'Your future self will thank you for writing today.',
+  },
+  {
+    title: '📝 Daily check-in',
+    body: 'How are you feeling? WriTee it down.',
+  },
+  {
+    title: '💫 Let\'s work on the streak!',
+    body: 'Just a few words can keep your momentum going.',
+  },
+  {
+    title: '🎯 Journal time',
+    body: 'What made today special?',
+  },
+  {
+    title: '🌙 End your day mindfully',
+    body: 'Reflect, write, and unwind.',
+  },
+  {
+    title: '☀️ Document your journey',
+    body: 'Every day has a story worth telling.',
+  },
+  {
+  title: '🦉 The Journal Owl is watching',
+  body: 'You forgot to WriTee. Again. Open the journal. Please.',
+},
+{
+  title: '🔥 Your streak is in danger',
+  body: 'WriTee one sentence. ONE. We both know you have thoughts.',
+},
+{
+  title: '😐 We noticed something',
+  body: 'You have emotions. The journal is empty. Explain yourself.',
+},
+{
+  title: '🚨 Emergency! Thoughts detected',
+  body: 'Unload them into the journal before they escape.',
+},
+{
+  title: '👀 Still thinking?',
+  body: 'Cool. WriTee it down instead of overthinking it.',
+},
+{
+  title: '📉 Streak anxiety activated',
+  body: 'Five words is enough. Don\'t be dramatic.',
+},
+{
+  title: '🧠 Brain full. Journal empty.',
+  body: 'This feels illegal. Fix it.',
+},
+{
+  title: '⏰ Procrastination check',
+  body: 'If you have time to breathe, you have time to journal.',
+},
+{
+  title: '😤 WriTee is disappointed',
+  body: 'Not angry. Just… disappointed. WriTee something.',
+},
+{
+  title: '🏃🏾‍♂️ Quick! Before tomorrow happens',
+  body: 'Future you will judge this silence.',
+},
+{
+  title: '📓 The journal misses you',
+  body: 'It\'s been staring at the wall all day.',
+},
+{
+  title: '💀 RIP forgotten thoughts',
+  body: 'Unless you WriTee them down. Now.',
+},
+{
+  title: '🎭 Main character moment',
+  body: 'Every protagonist journals. Just saying.',
+},
+{
+  title: '⚠️ Overthinking detected',
+  body: 'Redirecting to… journaling.',
+},
+{
+  title: '🤏🏾 Bare minimum challenge',
+  body: 'One line. Lower the bar. Do it.',
+},
+{
+  title: '👀 Ask yourself: What would a TKanjaye do?',
+  body: 'Exactly. Let\'s WriTee something.',
+},
+];
+
+/**
+ * Get a random notification message
+ * @returns Object with title and body
+ */
+const getRandomNotificationMessage = () => {
+  const randomIndex = Math.floor(Math.random() * NOTIFICATION_MESSAGES.length);
+  return NOTIFICATION_MESSAGES[randomIndex];
+};
+
 /**
  * Request notification permissions from the user
  * @returns Promise<boolean> - true if permission granted
@@ -103,11 +220,14 @@ export const scheduleDailyReminder = async (time: string): Promise<string | null
           repeats: true,
         } as Notifications.CalendarTriggerInput;
 
+    // Get a random notification message
+    const message = getRandomNotificationMessage();
+
     // Schedule the notification
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title: '✍🏾 Time to journal!',
-        body: 'Take a moment to WriTeeeeeeee.',
+        title: message.title,
+        body: message.body,
         data: { type: 'journal-reminder' },
         sound: 'default',
         ...(Platform.OS === 'android' && { channelId: 'journal-reminders' }),
@@ -163,10 +283,13 @@ export const sendTestNotification = async (): Promise<void> => {
       });
     }
 
+    // Get a random message for the test notification
+    const message = getRandomNotificationMessage();
+
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '✨ Test Notification',
-        body: 'Your journal reminders are working!',
+        title: message.title,
+        body: message.body,
         data: { type: 'test' },
         ...(Platform.OS === 'android' && { channelId: 'journal-reminders' }),
       },

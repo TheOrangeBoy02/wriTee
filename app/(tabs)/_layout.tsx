@@ -13,6 +13,7 @@ import {
 import { StyleSheet } from 'react-native';
 import Colors from '@/constants/Colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TabSlideTransition } from '@/navigation/transitions';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
@@ -26,7 +27,8 @@ export default function TabLayout() {
         tabBarStyle: tabBarStyle,
         tabBarLabelStyle: styles.tabBarLabel,
         headerShown: false,
-        animation: 'fade',
+        animation: 'shift',
+        ...TabSlideTransition,
       }}>
       <Tabs.Screen
         name="index"

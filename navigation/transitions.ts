@@ -66,29 +66,34 @@ export const FadeTransition = {
 };
 
 /**
- * Tab transition with micro-scale effect
- * Used for tab switching (future enhancement)
+ * Tab slide transition
+ * Used for tab switching with horizontal slide
  *
  * Timing: 200ms ease-in-out
  */
-export const TabTransition = {
+export const TabSlideTransition = {
   screenStyleInterpolator: (props: any) => {
     'worklet';
-    const { progress } = props;
+    const { progress, layouts } = props;
 
     return {
       contentStyle: {
-        opacity: progress,
         transform: [
           {
-            scale: interpolate(
+            translateX: interpolate(
               progress,
               [0, 1],
-              [0.97, 1],
+              [layouts.screen.width * 0.3, 0],
               Extrapolation.CLAMP
             ),
           },
         ],
+        opacity: interpolate(
+          progress,
+          [0, 0.5, 1],
+          [0, 1, 1],
+          Extrapolation.CLAMP
+        ),
       },
     };
   },

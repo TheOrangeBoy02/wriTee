@@ -41,8 +41,8 @@ export default function JournalEntryItem({ entry, onPress }: JournalEntryItemPro
     ? `${entry.content.substring(0, 120)}...`
     : entry.content;
 
-  const truncatedTitle = entry.title.length > 20
-    ? `${entry.title.substring(0, 20)}...`
+  const truncatedTitle = entry.title.length > 24
+    ? `${entry.title.substring(0, 24)}...`
     : entry.title;
 
   return (

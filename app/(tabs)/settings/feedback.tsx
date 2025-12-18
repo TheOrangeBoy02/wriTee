@@ -110,11 +110,9 @@ export default function FeedbackScreen() {
 
     try {
       // Construct mailto link with pre-filled content
-      const subject = encodeURIComponent(`WriTee Feedback: ${form.subject.trim()}`);
-      const body = encodeURIComponent(
-        `Name: ${form.name.trim()}\n\nMessage:\n${form.message.trim()}`
-      );
-      const mailtoUrl = `mailto:Writee@tkanjaye.com?subject=${subject}&body=${body}`;
+      const subject = encodeURIComponent(`${form.subject.trim()}`);
+      const body = encodeURIComponent(form.message.trim());
+      const mailtoUrl = `mailto:writee@tamandakanjaye.com?subject=${subject}&body=${body}`;
 
       // Try to open the email app directly
       // Note: On Android 11+, canOpenURL returns false for mailto even when email clients exist

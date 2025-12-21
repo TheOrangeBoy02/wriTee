@@ -23,7 +23,11 @@ export default {
     android: {
       package: "com.writee.app",
       versionCode: 6,
-      googleServicesFile: "./android/app/google-services.json"
+      googleServicesFile: "./android/app/google-services.json",
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/writee-logo.png",
+        backgroundColor: "#FFFFFF"
+      }
     },
     web: {
       bundler: "metro",

@@ -17,17 +17,13 @@ export default {
       buildNumber: "1.0.0",
       infoPlist: {
         UIBackgroundModes: ["remote-notification"]
-      },
-      googleServicesFile: "./ios/GoogleService-Info.plist"
+      }
+      // googleServicesFile: "./ios/GoogleService-Info.plist" // Temporarily disabled - re-add after downloading from Firebase
     },
     android: {
       package: "com.writee.app",
-      versionCode: 6,
-      googleServicesFile: "./android/app/google-services.json",
-      adaptiveIcon: {
-        foregroundImage: "./assets/images/writee-logo.png",
-        backgroundColor: "#FFFFFF"
-      }
+      versionCode: 6
+      // googleServicesFile: "./android/app/google-services.json" // Temporarily disabled - re-add after downloading from Firebase
     },
     web: {
       bundler: "metro",
@@ -43,7 +39,6 @@ export default {
         {
           icon: "./assets/images/writee-logo.png",
           color: "#af1dbf",
-          sounds: ["./assets/sounds/notification.wav"],
           mode: "production"
         }
       ]

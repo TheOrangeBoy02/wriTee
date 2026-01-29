@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 6,
-    borderLeftWidth: 4,
     borderLeftColor: Colors.primary.main,
     position: 'relative',
   },

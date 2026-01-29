@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
-    borderLeftWidth: 4,
+
     borderLeftColor: Colors.neutral.border,
   },
   shelvesContainer: {

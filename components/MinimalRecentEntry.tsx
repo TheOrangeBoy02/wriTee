@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   },
   leftBar: {
     borderRadius: 20,
-    width: 6,
+    width: 4,
     height: '50%',
     backgroundColor: Colors.primary.main,
     borderTopLeftRadius: 0,

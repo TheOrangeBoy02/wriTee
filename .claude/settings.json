@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx expo *)",
+      "Bash(./node_modules/.bin/expo config *)",
+      "Bash(node -p \"require\\('./node_modules/expo/package.json'\\).version\")",
+      "Bash(node -p \"require\\('./node_modules/lottie-react-native/package.json'\\).version\")",
+      "Bash(node -p \"require\\('./node_modules/@lottiefiles/dotlottie-react/package.json'\\).version\")"
+    ]
+  }
+}
